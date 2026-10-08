@@ -142,6 +142,97 @@ export default {
       }
     }
 
+      if (path === '/api/recommendations') {
+        const recs = await getRecommendations(env);
+        return new Response(JSON.stringify({ recommendations: recs }), { headers: { 'Content-Type': 'application/json' } });
+      }
+
+      if (path === '/api/d1_tables') {
+        const dbName = url.searchParams.get('db') || 'CMS_DB';
+        const target = env[dbName];
+        if (!target) return new Response(JSON.stringify({ error: 'db not found: ' + dbName }), { status: 400, headers: { 'Content-Type': 'application/json' } });
+        try {
+          const t = await target.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%' AND name NOT LIKE '_cf_%' ORDER BY name").all();
+          return new Response(JSON.stringify({ db: dbName, tables: (t.results || []).map(r => r.name) }), { headers: { 'Content-Type': 'application/json' } });
+        } catch (e) {
+          return new Response(JSON.stringify({ error: e.message }), { status: 500, headers: { 'Content-Type': 'application/json' } });
+        }
+      }
+
+      if (path === '/api/crons') {
+        const crons = [
+          { name: 'Health & Limit refresh', spec: '0 */3 * * *', desc: 'Health checks + free-tier counter refresh' },
+          { name: 'Resource sync & recommendations', spec: '0 */6 * * *', desc: 'Auto-detect CF resources, refresh recommendations' },
+          { name: 'Daily log patterns', spec: '0 2 * * *', desc: 'Aggregate logs, anomaly baseline' }
+        ];
+        let recent = [];
+        if (env.CMS_DB) { try { const r = await env.CMS_DB.prepare('SELECT * FROM cms_analytics_hourly ORDER BY timestamp DESC LIMIT 12').all(); recent = r.results || []; } catch {} }
+        return new Response(JSON.stringify({ crons, recent }), { headers: { 'Content-Type': 'application/json' } });
+      }
+
+      if (path === '/api/github_runs') {
+        const repo = url.searchParams.get('repo') || 'skmstudioservices-cyber/digipincode-india';
+        if (!env.GITHUB_TOKEN) return new Response(JSON.stringify({ error: 'GITHUB_TOKEN secret not set', repo, runs: [] }), { headers: { 'Content-Type': 'application/json' } });
+        try {
+          const r = await fetch('https://api.github.com/repos/' + repo + '/actions/runs?per_page=15', { headers: { 'Authorization': 'Bearer ' + env.GITHUB_TOKEN, 'Accept': 'application/vnd.github+json', 'User-Agent': 'nexus-cms' } });
+          const j = await r.json();
+          const runs = (j.workflow_runs || []).map(x => ({ name: x.name, status: x.status, conclusion: x.conclusion, branch: x.head_branch, created_at: x.created_at, url: x.html_url }));
+          return new Response(JSON.stringify({ repo, runs }), { headers: { 'Content-Type': 'application/json' } });
+        } catch (e) {
+          return new Response(JSON.stringify({ error: e.message, runs: [] }), { status: 500, headers: { 'Content-Type': 'application/json' } });
+        }
+      }
+
+      if (path === '/api/domain_check') {
+        const d = (url.searchParams.get('domain') || '').trim().toLowerCase();
+        if (!/^[a-z0-9.-]+\.[a-z]{2,}$/.test(d)) return new Response(JSON.stringify({ error: 'invalid domain' }), { status: 400, headers: { 'Content-Type': 'application/json' } });
+        try {
+          const r = await fetch('https://rdap.org/domain/' + d, { headers: { 'Accept': 'application/rdap+json', 'User-Agent': 'nexus-cms' } });
+          if (!r.ok) return new Response(JSON.stringify({ domain: d, registered: r.status !== 404, http: r.status }), { headers: { 'Content-Type': 'application/json' } });
+          const j = await r.json();
+          return new Response(JSON.stringify({ domain: d, registered: true, handle: j.handle, ldhName: j.ldhName, events: j.events || [], nameservers: (j.nameservers || []).map(n => n.ldhName), status: j.status || [] }), { headers: { 'Content-Type': 'application/json' } });
+        } catch (e) {
+          return new Response(JSON.stringify({ error: e.message }), { status: 500, headers: { 'Content-Type': 'application/json' } });
+        }
+      }
+
+      if (path === '/api/comments') {
+        if (request.method === 'POST') {
+          try {
+            const b = await request.json();
+            if (!b.comment) return new Response(JSON.stringify({ error: 'comment required' }), { status: 400, headers: { 'Content-Type': 'application/json' } });
+            if (env.CMS_DB) {
+              await env.CMS_DB.prepare('INSERT INTO cms_comments (id, site_id, file_path, line_number, comment) VALUES (?,?,?,?,?)')
+                .bind(crypto.randomUUID(), b.site_id || 'general', b.file_path || '', b.line_number || null, b.comment).run();
+            }
+            return new Response(JSON.stringify({ ok: true }), { headers: { 'Content-Type': 'application/json' } });
+          } catch (e) {
+            return new Response(JSON.stringify({ error: e.message }), { status: 500, headers: { 'Content-Type': 'application/json' } });
+          }
+        }
+        let dbComments = [];
+        if (env.CMS_DB) { try { const r = await env.CMS_DB.prepare('SELECT * FROM cms_comments ORDER BY created_at DESC LIMIT 100').all(); dbComments = r.results || []; } catch {} }
+        const comments = dbComments.length ? dbComments : await collectComments(env);
+        return new Response(JSON.stringify({ comments }), { headers: { 'Content-Type': 'application/json' } });
+      }
+
+      if (path === '/api/config') {
+        if (request.method === 'POST') {
+          try {
+            const b = await request.json();
+            if (env.CMS_DB && b.key) {
+              await env.CMS_DB.prepare('INSERT INTO cms_settings (key, value_json, updated_at) VALUES (?,?,CURRENT_TIMESTAMP) ON CONFLICT(key) DO UPDATE SET value_json=excluded.value_json, updated_at=CURRENT_TIMESTAMP').bind(b.key, JSON.stringify(b.value)).run();
+            }
+            return new Response(JSON.stringify({ ok: true }), { headers: { 'Content-Type': 'application/json' } });
+          } catch (e) {
+            return new Response(JSON.stringify({ error: e.message }), { status: 500, headers: { 'Content-Type': 'application/json' } });
+          }
+        }
+        let rows = [];
+        if (env.CMS_DB) { try { const r = await env.CMS_DB.prepare('SELECT key, value_json, updated_at FROM cms_settings ORDER BY key').all(); rows = r.results || []; } catch {} }
+        return new Response(JSON.stringify({ settings: rows }), { headers: { 'Content-Type': 'application/json' } });
+      }
+
     // 4. Render Main Dashboard or Login Page
     // Login page appears ONLY when a NEXUS_TOKEN IS set and the user isn't
     // authenticated. While login is disabled, actual + demo are both open.
@@ -509,539 +600,327 @@ function renderDashboardHTML({ view = 'actual' } = {}) {
   return `<!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Nexus CMS — Unified Mega Dashboard</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
-  <style>
-    :root {
-      --bg: #090d16;
-      --surface: #101726;
-      --surface-border: #1e293b;
-      --surface-hover: #162035;
-      --text: #f8fafc;
-      --text-muted: #94a3b8;
-      --accent: #38bdf8;
-      --accent-glow: rgba(56, 189, 248, 0.15);
-      --success: #10b981;
-      --warning: #f59e0b;
-      --danger: #ef4444;
-      --tag-bg: #1e293b;
-      --sidebar-w: 260px;
-    }
-
-    @media (prefers-color-scheme: light) {
-      :root[data-theme="auto"], :root[data-theme="light"] {
-        --bg: #f8fafc;
-        --surface: #ffffff;
-        --surface-border: #e2e8f0;
-        --surface-hover: #f1f5f9;
-        --text: #0f172a;
-        --text-muted: #64748b;
-        --accent: #0284c7;
-        --accent-glow: rgba(2, 132, 199, 0.12);
-        --tag-bg: #f1f5f9;
-      }
-    }
-
-    * { box-sizing: border-box; margin: 0; padding: 0; }
-    body {
-      font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
-      background: var(--bg);
-      color: var(--text);
-      display: flex;
-      min-height: 100vh;
-      overflow-x: hidden;
-    }
-
-    aside {
-      width: var(--sidebar-w);
-      background: var(--surface);
-      border-right: 1px solid var(--surface-border);
-      display: flex;
-      flex-direction: column;
-      flex-shrink: 0;
-      position: sticky;
-      top: 0;
-      height: 100vh;
-      overflow-y: auto;
-    }
-
-    .brand {
-      padding: 20px;
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      border-bottom: 1px solid var(--surface-border);
-    }
-    .brand-icon {
-      width: 36px; height: 36px;
-      background: linear-gradient(135deg, #0284c7, #38bdf8);
-      border-radius: 10px;
-      display: flex; align-items: center; justify-content: center;
-      font-weight: 800; color: #fff;
-      box-shadow: 0 4px 12px var(--accent-glow);
-    }
-    .brand-title { font-weight: 700; font-size: 16px; letter-spacing: -0.02em; }
-    .brand-sub { font-size: 11px; color: var(--text-muted); font-weight: 500; }
-
-    .nav-section { padding: 14px 16px 6px; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-muted); }
-    .nav-item {
-      display: flex; align-items: center; gap: 10px;
-      padding: 9px 16px; color: var(--text-muted); text-decoration: none;
-      font-size: 13px; font-weight: 500; border-radius: 8px; margin: 2px 10px;
-      transition: all 0.15s ease; cursor: pointer;
-    }
-    .nav-item:hover, .nav-item.active { background: var(--surface-hover); color: var(--text); }
-    .nav-item.active { color: var(--accent); background: var(--accent-glow); font-weight: 600; }
-    .nav-badge { margin-left: auto; font-size: 10px; padding: 2px 6px; border-radius: 10px; background: var(--tag-bg); color: var(--text-muted); }
-
-    main { flex: 1; display: flex; flex-direction: column; overflow-y: auto; min-width: 0; }
-
-    header {
-      height: 64px; padding: 0 28px;
-      border-bottom: 1px solid var(--surface-border);
-      background: var(--surface);
-      display: flex; align-items: center; justify-content: space-between;
-      position: sticky; top: 0; z-index: 10;
-    }
-    .header-left { display: flex; align-items: center; gap: 14px; }
-    .header-title { font-size: 18px; font-weight: 700; }
-    .header-badge {
-      font-size: 11px; padding: 3px 8px; border-radius: 6px;
-      background: rgba(16, 185, 129, 0.15); color: var(--success);
-      font-weight: 600; display: flex; align-items: center; gap: 6px;
-    }
-    .pulse-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--success); box-shadow: 0 0 8px var(--success); }
-
-    .header-right { display: flex; align-items: center; gap: 12px; }
-    .btn {
-      padding: 8px 14px; font-size: 13px; font-weight: 600;
-      border-radius: 8px; border: 1px solid var(--surface-border);
-      background: var(--surface); color: var(--text); cursor: pointer;
-      display: inline-flex; align-items: center; gap: 6px;
-      transition: all 0.15s ease; text-decoration: none;
-    }
-    .btn:hover { background: var(--surface-hover); }
-    .btn-primary { background: var(--accent); border-color: var(--accent); color: #0b1120; }
-    .btn-primary:hover { opacity: 0.9; }
-
-    .toggle-container {
-      display: flex; align-items: center; gap: 8px;
-      font-size: 12px; color: var(--text-muted);
-      padding: 4px 10px; border: 1px solid var(--surface-border);
-      border-radius: 20px; background: var(--surface-hover);
-    }
-    .switch { position: relative; display: inline-block; width: 32px; height: 18px; }
-    .switch input { opacity: 0; width: 0; height: 0; }
-    .slider {
-      position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0;
-      background-color: #475569; transition: .3s; border-radius: 20px;
-    }
-    .slider:before {
-      position: absolute; content: ""; height: 12px; width: 12px; left: 3px; bottom: 3px;
-      background-color: white; transition: .3s; border-radius: 50%;
-    }
-    input:checked + .slider { background-color: var(--accent); }
-    input:checked + .slider:before { transform: translateX(14px); }
-
-    .content-area { padding: 28px; max-width: 1400px; }
-
-    .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px; margin-bottom: 24px; }
-    .stat-card {
-      background: var(--surface); border: 1px solid var(--surface-border);
-      border-radius: 12px; padding: 18px; position: relative;
-    }
-    .stat-label { font-size: 12px; color: var(--text-muted); font-weight: 600; text-transform: uppercase; margin-bottom: 6px; }
-    .stat-val { font-size: 26px; font-weight: 800; letter-spacing: -0.02em; }
-    .stat-sub { font-size: 12px; color: var(--text-muted); margin-top: 4px; }
-
-    .limits-card {
-      background: var(--surface); border: 1px solid var(--surface-border);
-      border-radius: 12px; padding: 20px; margin-bottom: 24px;
-    }
-    .limits-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
-    .limits-title { font-size: 14px; font-weight: 700; display: flex; align-items: center; gap: 8px; }
-    .limit-bars { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 16px; }
-    .limit-item { font-size: 12px; }
-    .limit-item-header { display: flex; justify-content: space-between; margin-bottom: 6px; }
-    .bar-bg { height: 8px; background: var(--surface-border); border-radius: 4px; overflow: hidden; }
-    .bar-fill { height: 100%; border-radius: 4px; transition: width 0.4s ease; }
-    .bar-safe { background: var(--success); }
-    .bar-warn { background: var(--warning); }
-    .bar-crit { background: var(--danger); }
-
-    .two-col-grid { display: grid; grid-template-columns: 2fr 1fr; gap: 24px; }
-    @media (max-width: 1080px) { .two-col-grid { grid-template-columns: 1fr; } }
-
-    .card { background: var(--surface); border: 1px solid var(--surface-border); border-radius: 12px; padding: 20px; margin-bottom: 24px; }
-    .card-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 18px; }
-    .card-title { font-size: 15px; font-weight: 700; display: flex; align-items: center; gap: 8px; }
-
-    .site-table { width: 100%; border-collapse: collapse; font-size: 13px; }
-    .site-table th { text-align: left; padding: 10px 12px; border-bottom: 1px solid var(--surface-border); color: var(--text-muted); font-size: 11px; text-transform: uppercase; }
-    .site-table td { padding: 12px; border-bottom: 1px solid var(--surface-border); vertical-align: middle; }
-    .site-table tr:hover td { background: var(--surface-hover); }
-
-    .site-name-wrap { display: flex; flex-direction: column; }
-    .site-name { font-weight: 600; color: var(--text); text-decoration: none; }
-    .site-name:hover { color: var(--accent); }
-    .site-link { font-size: 11px; color: var(--text-muted); }
-
-    .badge {
-      display: inline-flex; align-items: center; padding: 2px 7px;
-      border-radius: 4px; font-size: 11px; font-weight: 600;
-      background: var(--tag-bg); color: var(--text-muted);
-      margin-right: 4px; margin-bottom: 2px;
-    }
-    .badge-astro { background: rgba(255, 93, 1, 0.15); color: #ff5d01; }
-    .badge-d1 { background: rgba(245, 158, 11, 0.15); color: #f59e0b; }
-    .badge-kv { background: rgba(56, 189, 248, 0.15); color: #38bdf8; }
-    .badge-supabase { background: rgba(16, 185, 129, 0.15); color: #10b981; }
-
-    .rec-item {
-      padding: 12px 14px; border-radius: 8px; background: var(--surface-hover);
-      border-left: 3px solid var(--warning); margin-bottom: 10px;
-      display: flex; flex-direction: column; gap: 4px;
-    }
-    .rec-title { font-size: 13px; font-weight: 600; display: flex; justify-content: space-between; }
-    .rec-desc { font-size: 12px; color: var(--text-muted); }
-
-    code, pre { font-family: 'JetBrains Mono', monospace; font-size: 12px; }
-    .quick-command {
-      background: #030712; border: 1px solid var(--surface-border);
-      border-radius: 8px; padding: 10px 14px; color: #38bdf8;
-      display: flex; justify-content: space-between; align-items: center; margin-top: 10px;
-    }
-
-    .mode-bar {
-      display: flex; align-items: center; gap: 12px; flex-wrap: wrap;
-      padding: 10px 18px; font-size: 13px; border-bottom: 1px solid var(--surface-border);
-    }
-    .mode-bar-actual { background: rgba(16, 185, 129, 0.10); }
-    .mode-bar-demo { background: rgba(245, 158, 11, 0.12); }
-    .mode-pill {
-      font-weight: 800; letter-spacing: 0.04em; font-size: 11px;
-      padding: 4px 10px; border-radius: 999px; background: var(--tag-bg);
-    }
-    .mode-bar-actual .mode-pill { color: var(--success); }
-    .mode-bar-demo .mode-pill { color: var(--warning); }
-    .mode-note { color: var(--text-muted); }
-    .mode-switch { margin-left: auto; font-weight: 700; color: var(--accent); text-decoration: none; }
-    .mode-switch:hover { text-decoration: underline; }
-    .demo-banner {
-      background: linear-gradient(90deg, #0284c7, #2563eb);
-      color: white; padding: 8px 16px; font-size: 12px;
-      font-weight: 600; text-align: center;
-      display: flex; justify-content: center; align-items: center; gap: 12px;
-    }
-  </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Nexus CMS — Mission Control</title>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#090d16;--surface:#101726;--border:#1e293b;--hover:#162035;--text:#f8fafc;--muted:#94a3b8;--accent:#38bdf8;--glow:rgba(56,189,248,.15);--ok:#10b981;--warn:#f59e0b;--bad:#ef4444;--tag:#1e293b;--sw:248px}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Plus Jakarta Sans',system-ui,sans-serif;background:var(--bg);color:var(--text);min-height:100vh}
+a{color:var(--accent)}
+.mode-bar{display:flex;align-items:center;gap:12px;flex-wrap:wrap;padding:10px 18px;font-size:13px;border-bottom:1px solid var(--border);position:sticky;top:0;z-index:50;backdrop-filter:blur(8px)}
+.mode-bar-actual{background:rgba(16,185,129,.12)}
+.mode-bar-demo{background:rgba(245,158,11,.14)}
+.mode-pill{font-weight:800;letter-spacing:.04em;font-size:11px;padding:4px 10px;border-radius:999px;background:var(--tag)}
+.mode-bar-actual .mode-pill{color:var(--ok)}
+.mode-bar-demo .mode-pill{color:var(--warn)}
+.mode-note{color:var(--muted)}
+.mode-switch{margin-left:auto;font-weight:700;text-decoration:none}
+.shell{display:flex;min-height:calc(100vh - 45px)}
+aside{width:var(--sw);background:var(--surface);border-right:1px solid var(--border);flex-shrink:0;position:sticky;top:45px;height:calc(100vh - 45px);overflow-y:auto;padding-bottom:28px}
+.brand{padding:18px 18px 10px;font-weight:800;font-size:15px}
+.brand span{color:var(--accent)}
+.nav-section{padding:14px 16px 6px;font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--muted)}
+.nav-item{display:flex;align-items:center;gap:9px;padding:9px 16px;font-size:13.5px;color:var(--muted);cursor:pointer;border-left:3px solid transparent;text-decoration:none}
+.nav-item:hover{background:var(--hover);color:var(--text)}
+.nav-item.active{color:var(--accent);background:var(--glow);border-left-color:var(--accent);font-weight:600}
+.nav-badge{margin-left:auto;font-size:10px;padding:2px 7px;border-radius:10px;background:var(--tag);color:var(--muted)}
+main{flex:1;min-width:0;padding:20px 24px 70px}
+header{display:flex;align-items:flex-end;justify-content:space-between;gap:16px;flex-wrap:wrap;margin-bottom:20px}
+.h-title{font-size:20px;font-weight:800}
+.h-sub{font-size:12px;color:var(--muted);margin-top:3px}
+.btn{display:inline-flex;align-items:center;gap:7px;padding:9px 14px;border-radius:10px;border:1px solid var(--border);background:var(--surface);color:var(--text);font-size:13px;font-weight:600;cursor:pointer;text-decoration:none}
+.btn:hover{background:var(--hover)}
+.btn-primary{background:var(--accent);color:#04121f;border-color:transparent}
+.btn-sm{padding:6px 10px;font-size:12px}
+.grid{display:grid;gap:14px}
+.g4{grid-template-columns:repeat(auto-fit,minmax(180px,1fr))}
+.g2{grid-template-columns:repeat(auto-fit,minmax(320px,1fr))}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:16px;margin-bottom:14px}
+.card-head{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:12px}
+.card-title{font-weight:700;font-size:14px}
+.stat{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:15px}
+.stat .l{font-size:10.5px;color:var(--muted);text-transform:uppercase;letter-spacing:.05em}
+.stat .v{font-size:23px;font-weight:800;margin-top:6px}
+.stat .s{font-size:11px;color:var(--muted);margin-top:3px}
+.badge{display:inline-block;font-size:11px;padding:2px 8px;border-radius:8px;background:var(--tag);color:var(--muted);margin:1px}
+table{width:100%;border-collapse:collapse;font-size:13px}
+th,td{text-align:left;padding:9px 10px;border-bottom:1px solid var(--border);vertical-align:top}
+th{font-size:10.5px;text-transform:uppercase;color:var(--muted);letter-spacing:.05em}
+code,.mono,pre{font-family:'JetBrains Mono',monospace;font-size:12px}
+input,select,textarea{background:var(--bg);border:1px solid var(--border);color:var(--text);border-radius:9px;padding:9px 11px;font-size:13px;font-family:inherit;width:100%}
+.bar{height:7px;border-radius:6px;background:var(--tag);overflow:hidden;margin-top:6px}
+.bar > i{display:block;height:100%;background:var(--ok)}
+.pill{font-size:11px;padding:3px 9px;border-radius:999px;background:var(--tag)}
+.ok{color:var(--ok)}.warn{color:var(--warn)}.bad{color:var(--bad)}.muted{color:var(--muted)}
+.row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+pre.out{background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:12px;overflow:auto;max-height:360px;white-space:pre-wrap;word-break:break-word}
+.spin{display:inline-block;width:14px;height:14px;border:2px solid var(--tag);border-top-color:var(--accent);border-radius:50%;animation:sp .7s linear infinite;vertical-align:-2px}
+@keyframes sp{to{transform:rotate(360deg)}}
+.toast{position:fixed;bottom:20px;right:20px;background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:12px 16px;font-size:13px;box-shadow:0 10px 30px rgba(0,0,0,.4);display:none;z-index:100;max-width:340px}
+@media(max-width:820px){aside{position:fixed;left:-100%;transition:left .2s;z-index:40}aside.open{left:0}.shell{display:block}}
+</style>
 </head>
-<body data-theme="auto">
+<body>
+<!-- BLOCK:MODE-BAR -->
+<div class="mode-bar ${isDemo ? 'mode-bar-demo' : 'mode-bar-actual'}">
+  <span class="mode-pill">${isDemo ? '👁️ DEMO DASHBOARD' : '✅ ACTUAL DASHBOARD'}</span>
+  <span class="mode-note">${isDemo ? 'Public sandbox view — no login required.' : 'Live view — real data from your D1 / KV / Cloudflare resources.'}</span>
+  <a class="mode-switch" href="?view=${isDemo ? 'actual' : 'demo'}">${isDemo ? '→ Switch to Actual Dashboard' : '→ Switch to Demo Dashboard'}</a>
+</div>
 
-  <aside>
-    <div class="brand">
-      <div class="brand-icon">N</div>
-      <div>
-        <div class="brand-title">Nexus CMS</div>
-        <div class="brand-sub">Unified Mega Dashboard</div>
-      </div>
-    </div>
-
+<div class="shell">
+  <!-- BLOCK:SIDEBAR -->
+  <aside id="side">
+    <div class="brand">⚡ Nexus <span>CMS</span></div>
     <div class="nav-section">Core</div>
-    <a class="nav-item active" href="#">🏠 Overview</a>
-    <a class="nav-item" href="#cloudflare">☁️ Cloudflare <span class="nav-badge">20</span></a>
-    <a class="nav-item" href="#github">🐙 GitHub <span class="nav-badge">Live</span></a>
-    <a class="nav-item" href="#content">📝 Content & Design</a>
-
-    <div class="nav-section">Data & Storage</div>
-    <a class="nav-item" href="#d1">💾 D1 Databases <span class="nav-badge">7 DBs</span></a>
-    <a class="nav-item" href="#kv">⚡ KV Namespaces <span class="nav-badge">5 NS</span></a>
-    <a class="nav-item" href="#analytics">📊 Traffic & Analytics</a>
-
-    <div class="nav-section">Automation & AI</div>
-    <a class="nav-item" href="#crons">⏰ Crons (3/5 active)</a>
-    <a class="nav-item" href="#anomalies">🚨 Anomaly Guard</a>
-    <a class="nav-item" href="#mcp">🤖 MCP AI Endpoint</a>
-
+    <a class="nav-item" data-tab="overview">🏠 Overview</a>
+    <a class="nav-item" data-tab="sites">🌐 Sites &amp; Stacks <span class="nav-badge" id="bSites">·</span></a>
+    <div class="nav-section">Data &amp; Storage</div>
+    <a class="nav-item" data-tab="d1">💾 D1 Databases</a>
+    <a class="nav-item" data-tab="kv">⚡ KV Namespaces</a>
+    <div class="nav-section">Operations</div>
+    <a class="nav-item" data-tab="crons">⏰ Crons</a>
+    <a class="nav-item" data-tab="github">🐙 GitHub Runs</a>
+    <a class="nav-item" data-tab="domains">🔎 Domain Checker</a>
+    <div class="nav-section">Content &amp; AI</div>
+    <a class="nav-item" data-tab="comments">💬 Comments <span class="nav-badge" id="bComments">·</span></a>
+    <a class="nav-item" data-tab="analytics">📊 Analytics</a>
+    <a class="nav-item" data-tab="notion">📓 Notion</a>
     <div class="nav-section">Management</div>
-    <a class="nav-item" href="#planner">📅 Planner & Tasks</a>
-    <a class="nav-item" href="#settings">⚙️ Settings & Secrets</a>
+    <a class="nav-item" data-tab="config">⚙️ Config</a>
+    <a class="nav-item" data-tab="mcp">🤖 MCP Endpoint</a>
   </aside>
 
+  <!-- BLOCK:MAIN -->
   <main>
-    <div class="mode-bar ${isDemo ? 'mode-bar-demo' : 'mode-bar-actual'}">
-      <span class="mode-pill">${isDemo ? '👁️ DEMO DASHBOARD' : '✅ ACTUAL DASHBOARD'}</span>
-      <span class="mode-note">${isDemo
-        ? 'Public sandbox view — no login required.'
-        : 'Live view — pulling real data from your bound D1 / KV / Cloudflare resources.'}</span>
-      <a class="mode-switch" href="?view=${isDemo ? 'actual' : 'demo'}">
-        ${isDemo ? '→ Switch to Actual Dashboard' : '→ Switch to Demo Dashboard'}
-      </a>
-    </div>
-
     <header>
-      <div class="header-left">
-        <div class="header-title">Mission Control</div>
-        <div class="header-badge"><div class="pulse-dot"></div> All Systems Operational</div>
+      <div>
+        <div class="h-title" id="pageTitle">Overview</div>
+        <div class="h-sub" id="pageSub">Mission control for the SKM network</div>
       </div>
-
-      <div class="header-right">
-        <div class="toggle-container" title="Automatically refresh data every 3 minutes">
-          <span>Auto-Refresh</span>
-          <label class="switch">
-            <input type="checkbox" id="autoRefreshToggle">
-            <span class="slider"></span>
-          </label>
-        </div>
-
-        <a class="btn" href="https://github.com/skmstudioservices-cyber/my-CMS-dashboard" target="_blank">
-          🐙 GitHub Repo
-        </a>
-        <button class="btn btn-primary" onclick="syncResourcesNow()">
-          🔄 Scan Resources
-        </button>
+      <div class="row">
+        <a class="btn" href="https://github.com/skmstudioservices-cyber/my-CMS-dashboard" target="_blank" rel="noopener">🐙 Repo</a>
+        <button class="btn btn-primary" onclick="syncNow()">🔄 Scan Resources</button>
       </div>
     </header>
-
-    <div class="content-area">
-      <div class="stats-grid">
-        <div class="stat-card">
-          <div class="stat-label">Active Pages Sites</div>
-          <div class="stat-val" id="sitesCount">10+</div>
-          <div class="stat-sub">Astro & SSG / Hybrid</div>
-        </div>
-        <div class="stat-card">
-          <div class="stat-label">Cloudflare Workers</div>
-          <div class="stat-val">10</div>
-          <div class="stat-sub">Observability Enabled</div>
-        </div>
-        <div class="stat-card">
-          <div class="stat-label">Bound D1 Databases</div>
-          <div class="stat-val">7</div>
-          <div class="stat-sub">cms-db, seo-keywords, maps</div>
-        </div>
-        <div class="stat-card">
-          <div class="stat-label">Health & Uptime</div>
-          <div class="stat-val" style="color: var(--success);">99.98%</div>
-          <div class="stat-sub">0 critical anomalies</div>
-        </div>
-      </div>
-
-      <div class="limits-card">
-        <div class="limits-header">
-          <div class="limits-title">
-            🛡️ Limit Guard — Cloudflare Free Tier Quota Monitor
-          </div>
-          <span style="font-size: 11px; color: var(--text-muted);">Resets daily at 00:00 UTC</span>
-        </div>
-        <div class="limit-bars">
-          <div class="limit-item">
-            <div class="limit-item-header">
-              <span>D1 Row Reads</span>
-              <span id="d1ReadCount">1,250 / 5,000,000 (0.025%)</span>
-            </div>
-            <div class="bar-bg"><div class="bar-fill bar-safe" style="width: 0.025%;"></div></div>
-          </div>
-          <div class="limit-item">
-            <div class="limit-item-header">
-              <span>D1 Row Writes</span>
-              <span>42 / 100,000 (0.042%)</span>
-            </div>
-            <div class="bar-bg"><div class="bar-fill bar-safe" style="width: 0.042%;"></div></div>
-          </div>
-          <div class="limit-item">
-            <div class="limit-item-header">
-              <span>KV Namespace Writes</span>
-              <span>8 / 1,000 (0.80%)</span>
-            </div>
-            <div class="bar-bg"><div class="bar-fill bar-safe" style="width: 0.8%;"></div></div>
-          </div>
-          <div class="limit-item">
-            <div class="limit-item-header">
-              <span>Worker Requests</span>
-              <span>2,140 / 100,000 (2.14%)</span>
-            </div>
-            <div class="bar-bg"><div class="bar-fill bar-safe" style="width: 2.14%;"></div></div>
-          </div>
-        </div>
-      </div>
-
-      <div class="two-col-grid">
-        <div class="card">
-          <div class="card-head">
-            <div class="card-title">🌐 Auto-Detected Sites & Stacks</div>
-            <span class="badge" style="background: var(--accent-glow); color: var(--accent);">Auto-Synced</span>
-          </div>
-
-          <table class="site-table">
-            <thead>
-              <tr>
-                <th>Site & Subdomain</th>
-                <th>Type</th>
-                <th>Detected Stack</th>
-                <th>Bindings</th>
-                <th>Status</th>
-              </tr>
-            </thead>
-            <tbody id="sitesTableBody">
-              <tr>
-                <td>
-                  <div class="site-name-wrap">
-                    <a class="site-name" href="https://mapsnearme.pages.dev" target="_blank">mapsnearme</a>
-                    <span class="site-link">mapsnearme.pages.dev</span>
-                  </div>
-                </td>
-                <td><span class="badge">Pages</span></td>
-                <td><span class="badge badge-astro">Astro</span><span class="badge">Tailwind</span></td>
-                <td><span class="badge badge-d1">D1: mapsnearme-db</span><span class="badge badge-kv">KV: MAPS_ADS</span></td>
-                <td><span class="badge" style="color: var(--success);">● Active</span></td>
-              </tr>
-              <tr>
-                <td>
-                  <div class="site-name-wrap">
-                    <a class="site-name" href="https://digipincode.pages.dev" target="_blank">digipincode</a>
-                    <span class="site-link">digipincode.pages.dev</span>
-                  </div>
-                </td>
-                <td><span class="badge">Pages</span></td>
-                <td><span class="badge badge-astro">Astro</span></td>
-                <td><span class="badge badge-d1">D1: pincode-india-db</span></td>
-                <td><span class="badge" style="color: var(--success);">● Active</span></td>
-              </tr>
-              <tr>
-                <td>
-                  <div class="site-name-wrap">
-                    <a class="site-name" href="https://toiletsnearme.pages.dev" target="_blank">toiletsnearme</a>
-                    <span class="site-link">toiletsnearme.pages.dev</span>
-                  </div>
-                </td>
-                <td><span class="badge">Pages</span></td>
-                <td><span class="badge badge-astro">Astro</span></td>
-                <td><span class="badge badge-supabase">Supabase</span></td>
-                <td><span class="badge" style="color: var(--success);">● Active</span></td>
-              </tr>
-              <tr>
-                <td>
-                  <div class="site-name-wrap">
-                    <a class="site-name" href="https://evchargersnearme.pages.dev" target="_blank">evchargersnearme</a>
-                    <span class="site-link">evchargersnearme.pages.dev</span>
-                  </div>
-                </td>
-                <td><span class="badge">Pages</span></td>
-                <td><span class="badge badge-astro">Astro</span></td>
-                <td><span class="badge badge-d1">D1</span></td>
-                <td><span class="badge" style="color: var(--success);">● Active</span></td>
-              </tr>
-              <tr>
-                <td>
-                  <div class="site-name-wrap">
-                    <a class="site-name" href="https://skmtools.pages.dev" target="_blank">skmtools</a>
-                    <span class="site-link">skmtools.pages.dev</span>
-                  </div>
-                </td>
-                <td><span class="badge">Pages</span></td>
-                <td><span class="badge badge-astro">Astro</span></td>
-                <td><span class="badge badge-d1">D1: skmtools-db</span></td>
-                <td><span class="badge" style="color: var(--success);">● Active</span></td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-
-        <div>
-          <div class="card">
-            <div class="card-head">
-              <div class="card-title">💡 Proactive Recommendations</div>
-              <span class="badge" style="background: rgba(245, 158, 11, 0.15); color: var(--warning);">3 Pending</span>
-            </div>
-
-            <div class="rec-item">
-              <div class="rec-title">
-                <span>Missing sitemap.xml</span>
-                <span class="badge" style="color: var(--warning);">SEO</span>
-              </div>
-              <div class="rec-desc">Site <b>evchargersnearme</b> does not declare a public sitemap in robots.txt.</div>
-            </div>
-
-            <div class="rec-item">
-              <div class="rec-title">
-                <span>D1 Read Optimization</span>
-                <span class="badge" style="color: var(--accent);">Cache</span>
-              </div>
-              <div class="rec-desc"><b>pincode-india-db</b> can utilize nexus-cache KV with 6h TTL to save ~25k daily reads.</div>
-            </div>
-
-            <div class="rec-item">
-              <div class="rec-title">
-                <span>Custom Domain SSL</span>
-                <span class="badge" style="color: var(--success);">Security</span>
-              </div>
-              <div class="rec-desc">All 10 Cloudflare Pages have Full (Strict) SSL enabled by default.</div>
-            </div>
-          </div>
-
-          <div class="card">
-            <div class="card-head">
-              <div class="card-title">🤖 AI Agent MCP Access</div>
-            </div>
-            <p style="font-size: 12px; color: var(--text-muted); line-height: 1.5; margin-bottom: 12px;">
-              Other AI tools can connect read-only to query live infrastructure state, database schemas, and collected comments via the MCP endpoint:
-            </p>
-            <div class="quick-command">
-              <span>GET /mcp/sites</span>
-              <span style="font-size: 11px; color: var(--text-muted);">Header: X-Nexus-Token</span>
-            </div>
-            <div class="quick-command">
-              <span>GET /mcp/comments/collect</span>
-              <span style="font-size: 11px; color: var(--text-muted);">Extracts all TODOs</span>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
+    <div id="view"><div class="muted"><span class="spin"></span> Loading…</div></div>
   </main>
+</div>
 
-  <script>
-    const toggle = document.getElementById('autoRefreshToggle');
-    let timer = null;
+<div class="toast" id="toast"></div>
+<script>
+/* BLOCK:APP-JS — tab router + real-data fetchers (no backticks inside) */
+var $ = function(s, r){ return (r||document).querySelector(s); };
+var $$ = function(s, r){ return Array.prototype.slice.call((r||document).querySelectorAll(s)); };
+function toast(m){ var t=$('#toast'); t.textContent=m; t.style.display='block'; clearTimeout(t._t); t._t=setTimeout(function(){t.style.display='none';},2800); }
+function api(path, opts){ return fetch(path, opts).then(function(r){ var ct=r.headers.get('content-type')||''; return ct.indexOf('json')>-1 ? r.json() : r.text(); }); }
+function fmt(n){ return Number(n||0).toLocaleString('en-IN'); }
+function esc(s){ return String(s==null?'':s).replace(/[&<>]/g, function(c){ return ({'&':'&amp;','<':'&lt;','>':'&gt;'})[c]; }); }
+function badge(x){ return '<span class="badge">'+esc(x)+'</span>'; }
+var TITLES={overview:['Overview','Mission control for the SKM network'],sites:['Sites & Stacks','Auto-detected Pages / Workers and their bindings'],d1:['D1 Databases','Browse tables and run read-only SQL'],kv:['KV Namespaces','Browse keys in each bound namespace'],crons:['Crons','Scheduled jobs on this worker'],github:['GitHub Runs','Recent workflow runs'],domains:['Domain Checker','RDAP lookup for any domain'],comments:['Comments','Block-level notes with voice + copy-all'],analytics:['Analytics','Traffic and search performance'],notion:['Notion','Workspace links'],config:['Config','cms_settings key / values'],mcp:['MCP Endpoint','Read-only AI access']};
+var RENDER={};
 
-    toggle.addEventListener('change', (e) => {
-      if (e.target.checked) {
-        timer = setInterval(fetchOverviewData, 180000);
-      } else {
-        if (timer) clearInterval(timer);
-      }
-    });
+function show(tab){
+  $$('.nav-item').forEach(function(a){ a.classList.toggle('active', a.dataset.tab===tab); });
+  var t=TITLES[tab]||TITLES.overview;
+  $('#pageTitle').textContent=t[0]; $('#pageSub').textContent=t[1];
+  $('#view').innerHTML='<div class="muted"><span class="spin"></span> Loading '+tab+'…</div>';
+  location.hash=tab;
+  (RENDER[tab]||RENDER.overview)();
+}
+window.addEventListener('hashchange', function(){ show(location.hash.replace('#','')||'overview'); });
 
-    async function fetchOverviewData() {
-      try {
-        const res = await fetch('/api/overview');
-        if (res.ok) {
-          const data = await res.json();
-          console.log('[Nexus] Background data refreshed:', data);
-        }
-      } catch (e) {}
-    }
+RENDER.overview=function(){
+  api('/api/overview').then(function(d){
+    var lim=(d&&d.limits)||[];
+    function bar(x){ var used=x.used_today||0, max=x.daily_limit||1, p=(x.percent_used!=null?x.percent_used:(max?used/max*100:0)); return '<div style="margin-bottom:12px"><div class="row" style="justify-content:space-between"><span>'+esc(x.resource_name||'')+'</span><span class="mono muted">'+fmt(used)+' / '+fmt(max)+' ('+Number(p).toFixed(2)+'%)</span></div><div class="bar"><i style="width:'+Math.min(100,p)+'%;background:'+(p>85?'var(--bad)':p>60?'var(--warn)':'var(--ok)')+'"></i></div></div>'; }
+    var html='<div class="grid g4" style="margin-bottom:16px">'
+      +'<div class="stat"><div class="l">Sites</div><div class="v">'+fmt(d.total_sites||0)+'</div><div class="s">tracked</div></div>'
+      +'<div class="stat"><div class="l">D1 Databases</div><div class="v">'+fmt(d.d1_count||0)+'</div><div class="s">bound</div></div>'
+      +'<div class="stat"><div class="l">KV Namespaces</div><div class="v">'+fmt(d.kv_count||0)+'</div><div class="s">bound</div></div>'
+      +'<div class="stat"><div class="l">Health</div><div class="v ok">'+esc(d.health_score||'\u2014')+'</div><div class="s">uptime</div></div>'
+      +'</div>';
+    html+='<div class="card"><div class="card-head"><div class="card-title">\ud83d\udee1\ufe0f Limit Guard \u2014 Free Tier</div><span class="muted" style="font-size:11px">Resets 00:00 UTC</span></div>'+lim.map(bar).join('')+'</div>';
+    html+='<div class="card"><div class="card-head"><div class="card-title">\ud83d\udca1 Recommendations</div></div><div id="recList" class="muted">loading\u2026</div></div>';
+    html+='<div class="card"><div class="card-head"><div class="card-title">\ud83d\ude80 Recent deployments</div></div>'+((d.recent_deployments||[]).map(function(x){ return '<div style="padding:6px 0;border-bottom:1px solid var(--border)"><b>'+esc(x.site)+'</b> <span class="mono muted">'+esc(x.sha||'')+'</span> \u2014 '+esc(x.message||'')+' <span class="muted" style="font-size:11px">'+esc(x.date||'')+'</span></div>'; }).join('')||'<span class="muted">none</span>')+'</div>';
+    $('#view').innerHTML=html;
+    api('/api/recommendations').then(function(r){
+      var recs=(r&&r.recommendations)||[];
+      if(!recs.length){ $('#recList').innerHTML='<span class="ok">No open recommendations.</span>'; return; }
+      $('#recList').innerHTML=recs.map(function(x){ return '<div style="padding:8px 0;border-bottom:1px solid var(--border)"><div class="row" style="justify-content:space-between"><b>'+esc(x.site_id||x.type||'')+'</b>'+badge(x.severity||'info')+'</div><div class="muted" style="font-size:12px;margin-top:3px">'+esc(x.message||'')+'</div></div>'; }).join('');
+    }).catch(function(){ $('#recList').innerHTML='<span class="muted">unavailable</span>'; });
+  }).catch(function(e){ $('#view').innerHTML='<div class="bad">Failed: '+esc(e.message)+'</div>'; });
+};
 
-    async function syncResourcesNow() {
-      const btn = event.target;
-      btn.innerText = 'Scanning...';
-      try {
-        const res = await fetch('/api/sync_resources');
-        if (res.ok) {
-          alert('Resource scan complete! Sites updated.');
-          window.location.reload();
-        }
-      } catch (e) {
-        alert('Scan triggered.');
-      } finally {
-        btn.innerText = '🔄 Scan Resources';
-      }
-    }
-  </script>
+RENDER.sites=function(){
+  api('/api/sites').then(function(d){
+    var sites=(d&&d.sites)||d||[];
+    $('#bSites').textContent=sites.length;
+    if(!sites.length){ $('#view').innerHTML='<div class="muted">No sites detected.</div>'; return; }
+    var rows=sites.map(function(s){
+      var bind=(s.d1_bindings||[]).map(function(x){return '<span class="badge">D1: '+esc(x)+'</span>';}).join(' ')+' '+(s.kv_bindings||[]).map(function(x){return '<span class="badge">KV: '+esc(x)+'</span>';}).join(' ');
+      var stack=(s.stack||[]).map(badge).join(' ');
+      return '<tr><td><b>'+esc(s.name||s.id)+'</b><div class="muted mono" style="font-size:11px">'+esc(s.subdomain||'')+'</div></td><td>'+badge(s.type||'')+'</td><td>'+stack+'</td><td>'+bind+'</td><td><span class="ok">\u25cf '+esc(s.status||'active')+'</span></td></tr>';
+    }).join('');
+    $('#view').innerHTML='<div class="card"><div class="card-head"><div class="card-title">\ud83c\udf10 Sites &amp; Stacks</div><span class="muted" style="font-size:11px">'+sites.length+' detected</span></div><table><thead><tr><th>Site</th><th>Type</th><th>Stack</th><th>Bindings</th><th>Status</th></tr></thead><tbody>'+rows+'</tbody></table></div>';
+  }).catch(function(e){ $('#view').innerHTML='<div class="bad">Failed: '+esc(e.message)+'</div>'; });
+};
+
+var DBS=['CMS_DB','SEO_DB','MAPS_DB','PINCODE_DB','EXAM_DB','EXAM_APAC','SKMTOOLS_DB'];
+RENDER.d1=function(){
+  var opts=DBS.map(function(x){ return '<option>'+x+'</option>'; }).join('');
+  $('#view').innerHTML='<div class="card"><div class="card-head"><div class="card-title">💾 D1 Databases</div></div>'
+    +'<div class="row"><select id="dbSel" style="max-width:260px">'+opts+'</select><button class="btn btn-sm" onclick="d1Tables()">List tables</button></div>'
+    +'<div id="tblOut" style="margin-top:14px"></div></div>'
+    +'<div class="card"><div class="card-head"><div class="card-title">▶️ SQL Runner</div><span class="muted" style="font-size:11px">read-only recommended</span></div>'
+    +'<textarea id="sqlBox" rows="3" placeholder="SELECT name FROM sqlite_master LIMIT 10"></textarea>'
+    +'<div class="row" style="margin-top:10px"><button class="btn btn-primary btn-sm" onclick="d1Run()">Run query</button></div>'
+    +'<pre class="out" id="sqlOut" style="margin-top:12px">—</pre></div>';
+  d1Tables();
+};
+window.d1Tables=function(){
+  var db=$('#dbSel').value; $('#tblOut').innerHTML='<span class="spin"></span> listing…';
+  api('/api/d1_tables?db='+encodeURIComponent(db)).then(function(r){
+    if(r.error){ $('#tblOut').innerHTML='<span class="bad">'+esc(r.error)+'</span>'; return; }
+    $('#tblOut').innerHTML='<div class="row">'+(r.tables||[]).map(function(t){ return '<span class="pill" style="cursor:pointer" onclick="d1Quick(&quot;'+esc(t)+'&quot;)">'+esc(t)+'</span>'; }).join(' ')+'</div>';
+  }).catch(function(e){ $('#tblOut').innerHTML='<span class="bad">'+esc(e.message)+'</span>'; });
+};
+window.d1Quick=function(t){ $('#sqlBox').value='SELECT * FROM "'+t+'" LIMIT 20'; d1Run(); };
+window.d1Run=function(){
+  var db=$('#dbSel').value, q=$('#sqlBox').value; $('#sqlOut').textContent='running…';
+  api('/api/d1_query',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({db:db,query:q})}).then(function(r){
+    if(r.error){ $('#sqlOut').innerHTML='<span class="bad">'+esc(r.error)+'</span>'; return; }
+    var rows=(r.results||r||[]); $('#sqlOut').textContent=JSON.stringify(rows,null,2).slice(0,20000);
+  }).catch(function(e){ $('#sqlOut').innerHTML='<span class="bad">'+esc(e.message)+'</span>'; });
+};
+
+var KVS=['NEXUS_CACHE','SESSION','MAPS_ADS','MAPS_ADS2'];
+RENDER.kv=function(){
+  var opts=KVS.map(function(x){ return '<option>'+x+'</option>'; }).join('');
+  $('#view').innerHTML='<div class="card"><div class="card-head"><div class="card-title">⚡ KV Namespaces</div></div>'
+    +'<div class="row"><select id="kvSel" style="max-width:260px">'+opts+'</select><button class="btn btn-sm" onclick="kvList()">List keys</button></div>'
+    +'<pre class="out" id="kvOut" style="margin-top:14px">—</pre></div>';
+  kvList();
+};
+window.kvList=function(){
+  var ns=$('#kvSel').value; $('#kvOut').textContent='loading…';
+  api('/api/kv_list?ns='+encodeURIComponent(ns)).then(function(r){ $('#kvOut').textContent=JSON.stringify(r,null,2).slice(0,20000); })
+    .catch(function(e){ $('#kvOut').innerHTML='<span class="bad">'+esc(e.message)+'</span>'; });
+};
+
+RENDER.crons=function(){
+  api('/api/crons').then(function(d){
+    var rows=(d.crons||[]).map(function(c){ return '<tr><td><b>'+esc(c.name)+'</b></td><td class="mono">'+esc(c.spec)+'</td><td class="muted">'+esc(c.desc)+'</td></tr>'; }).join('');
+    var recent=(d.recent||[]).map(function(r){ return '<tr><td class="mono">'+esc(r.timestamp)+'</td><td>'+esc(r.site_id)+'</td><td>'+fmt(r.requests)+'</td><td>'+fmt(r.errors)+'</td><td>'+fmt(r.page_views)+'</td></tr>'; }).join('');
+    $('#view').innerHTML='<div class="card"><div class="card-head"><div class="card-title">⏰ Cron Triggers</div></div><table><thead><tr><th>Job</th><th>Schedule</th><th>What</th></tr></thead><tbody>'+rows+'</tbody></table></div>'
+      +'<div class="card"><div class="card-head"><div class="card-title">📈 Recent hourly analytics</div></div><table><thead><tr><th>Time</th><th>Site</th><th>Req</th><th>Err</th><th>Views</th></tr></thead><tbody>'+(recent||'<tr><td colspan=5 class="muted">none yet</td></tr>')+'</tbody></table></div>';
+  }).catch(function(e){ $('#view').innerHTML='<div class="bad">Failed: '+esc(e.message)+'</div>'; });
+};
+
+RENDER.github=function(){
+  $('#view').innerHTML='<div class="card"><div class="card-head"><div class="card-title">🐙 GitHub Runs</div></div><div class="row"><input id="ghRepo" value="skmstudioservices-cyber/digipincode-india" style="max-width:420px"><button class="btn btn-sm" onclick="ghRuns()">Load</button></div><div id="ghOut" style="margin-top:14px">…</div></div>';
+  ghRuns();
+};
+window.ghRuns=function(){
+  var repo=$('#ghRepo').value; $('#ghOut').innerHTML='<span class="spin"></span> loading…';
+  api('/api/github_runs?repo='+encodeURIComponent(repo)).then(function(d){
+    if(d.error){ $('#ghOut').innerHTML='<span class="warn">'+esc(d.error)+'</span>'; return; }
+    var rows=(d.runs||[]).map(function(r){ var c=r.conclusion||r.status; var col=c==='success'?'ok':(c==='failure'?'bad':'warn'); return '<tr><td><a href="'+esc(r.url)+'" target="_blank" rel="noopener">'+esc(r.name)+'</a></td><td>'+badge(r.branch||'')+'</td><td><span class="'+col+'">'+esc(c)+'</span></td><td class="muted mono" style="font-size:11px">'+esc((r.created_at||'').replace('T',' ').slice(0,16))+'</td></tr>'; }).join('');
+    $('#ghOut').innerHTML='<table><thead><tr><th>Workflow</th><th>Branch</th><th>Result</th><th>When</th></tr></thead><tbody>'+rows+'</tbody></table>';
+  }).catch(function(e){ $('#ghOut').innerHTML='<span class="bad">'+esc(e.message)+'</span>'; });
+};
+
+RENDER.domains=function(){
+  $('#view').innerHTML='<div class="card"><div class="card-head"><div class="card-title">🔎 Domain Checker (RDAP)</div></div>'
+    +'<div class="row"><input id="domBox" placeholder="example.com" style="max-width:360px"><button class="btn btn-primary btn-sm" onclick="domCheck()">Check</button></div>'
+    +'<pre class="out" id="domOut" style="margin-top:14px">—</pre></div>';
+};
+window.domCheck=function(){
+  var d=$('#domBox').value.trim(); if(!d) return; $('#domOut').textContent='checking…';
+  api('/api/domain_check?domain='+encodeURIComponent(d)).then(function(r){ $('#domOut').textContent=JSON.stringify(r,null,2); })
+    .catch(function(e){ $('#domOut').innerHTML='<span class="bad">'+esc(e.message)+'</span>'; });
+};
+
+RENDER.comments=function(){
+  $('#view').innerHTML='<div class="card"><div class="card-head"><div class="card-title">💬 Add a comment</div></div>'
+    +'<div class="row"><input id="cmFile" placeholder="file / block (e.g. src/pages/index.astro)" style="max-width:340px"><input id="cmLine" type="number" placeholder="line" style="max-width:110px"><button class="btn btn-sm" onclick="cmVoice()">🎤 Voice</button></div>'
+    +'<textarea id="cmText" rows="3" placeholder="Your note…" style="margin-top:10px"></textarea>'
+    +'<div class="row" style="margin-top:10px"><button class="btn btn-primary btn-sm" onclick="cmAdd()">Add comment</button><button class="btn btn-sm" onclick="cmCopyAll()">📋 Copy all</button></div></div>'
+    +'<div class="card"><div class="card-head"><div class="card-title">📝 Comments</div><span class="muted" style="font-size:11px" id="cmCount"></span></div><div id="cmList">…</div></div>';
+  cmLoad();
+};
+window.cmLoad=function(){
+  api('/api/comments').then(function(d){
+    var c=(d.comments||[]); $('#cmCount').textContent=c.length+' saved';
+    var html=c.map(function(x){ return '<div style="padding:8px 0;border-bottom:1px solid var(--border)"><div class="mono muted" style="font-size:11px">'+esc(x.file_path||'general')+(x.line_number?':'+esc(x.line_number):'')+' \u00b7 '+esc(x.created_at||'')+'</div><div style="margin-top:3px">'+esc(x.comment)+'</div></div>'; }).join('');
+    $('#cmList').innerHTML=html||'<span class="muted">No comments yet.</span>';
+  }).catch(function(e){ $('#cmList').innerHTML='<span class="bad">'+esc(e.message)+'</span>'; });
+};
+window.cmAdd=function(){
+  var t=$('#cmText').value.trim(); if(!t){ toast('Write something first'); return; }
+  api('/api/comments',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({comment:t,file_path:$('#cmFile').value,line_number:$('#cmLine').value||null})})
+    .then(function(){ $('#cmText').value=''; toast('Comment added'); cmLoad(); })
+    .catch(function(e){ toast('Failed: '+e.message); });
+};
+window.cmCopyAll=function(){
+  api('/api/comments').then(function(d){
+    var txt=(d.comments||[]).map(function(x){ return (x.file_path||'general')+(x.line_number?':'+x.line_number:'')+' — '+x.comment; }).join('\n');
+    navigator.clipboard.writeText(txt).then(function(){ toast('Copied '+((d.comments||[]).length)+' comments'); });
+  });
+};
+window.cmVoice=function(){
+  var SR=window.SpeechRecognition||window.webkitSpeechRecognition;
+  if(!SR){ toast('Voice not supported in this browser'); return; }
+  var r=new SR(); r.lang='en-IN'; r.interimResults=false;
+  r.onresult=function(e){ $('#cmText').value=(($('#cmText').value)+' '+e.results[0][0].transcript).trim(); toast('Voice added'); };
+  r.onerror=function(){ toast('Voice error'); };
+  r.start(); toast('Listening…');
+};
+
+RENDER.analytics=function(){
+  $('#view').innerHTML='<div class="card"><div class="card-head"><div class="card-title">📊 Traffic &amp; Search</div></div>'
+    +'<p class="muted" style="font-size:12.5px;line-height:1.6">Search Console + GA4 views open in their own dashboards. Live request/error analytics from cms_analytics_hourly appear under <b>Crons</b>. Full GSC/GA panels can be wired when the read tokens are added.</p>'
+    +'<div class="row" style="margin-top:12px">'
+    +'<a class="btn" target="_blank" rel="noopener" href="https://search.google.com/search-console">🔎 Search Console</a>'
+    +'<a class="btn" target="_blank" rel="noopener" href="https://analytics.google.com/">📈 Google Analytics</a>'
+    +'<a class="btn" target="_blank" rel="noopener" href="https://dash.cloudflare.com/">☁️ Cloudflare</a>'
+    +'</div></div>';
+};
+
+RENDER.notion=function(){
+  $('#view').innerHTML='<div class="card"><div class="card-head"><div class="card-title">📓 Notion</div></div>'
+    +'<p class="muted" style="font-size:12.5px;line-height:1.6">Workspace links (Mission Control, Conversation Log, Goals, Decision Log). Embed live pages by adding a Notion read token later.</p>'
+    +'<div class="row" style="margin-top:12px"><a class="btn" target="_blank" rel="noopener" href="https://www.notion.so/">📓 Open Notion</a></div></div>';
+};
+
+RENDER.config=function(){
+  api('/api/config').then(function(d){
+    var rows=(d.settings||[]).map(function(s){ return '<tr><td class="mono">'+esc(s.key)+'</td><td class="mono" style="font-size:11px">'+esc(s.value_json)+'</td><td class="muted mono" style="font-size:11px">'+esc(s.updated_at||'')+'</td></tr>'; }).join('');
+    $('#view').innerHTML='<div class="card"><div class="card-head"><div class="card-title">⚙️ cms_settings</div></div>'
+      +'<div class="row"><input id="cfgKey" placeholder="key" style="max-width:220px"><input id="cfgVal" placeholder="value (JSON or text)" style="max-width:320px"><button class="btn btn-primary btn-sm" onclick="cfgSave()">Save</button></div>'
+      +'<table style="margin-top:14px"><thead><tr><th>Key</th><th>Value</th><th>Updated</th></tr></thead><tbody>'+(rows||'<tr><td colspan=3 class="muted">none yet</td></tr>')+'</tbody></table></div>';
+  }).catch(function(e){ $('#view').innerHTML='<div class="bad">Failed: '+esc(e.message)+'</div>'; });
+};
+window.cfgSave=function(){
+  var k=$('#cfgKey').value.trim(), v=$('#cfgVal').value; if(!k) return toast('key required');
+  var val; try{ val=JSON.parse(v); }catch(e){ val=v; }
+  api('/api/config',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({key:k,value:val})}).then(function(){ toast('Saved'); RENDER.config(); }).catch(function(e){ toast('Failed: '+e.message); });
+};
+
+RENDER.mcp=function(){
+  $('#view').innerHTML='<div class="card"><div class="card-head"><div class="card-title">🤖 MCP Endpoints (read-only)</div></div>'
+    +'<div class="mono" style="font-size:12px;line-height:2">'
+    +'GET /mcp/sites<br>GET /mcp/recommendations<br>GET /mcp/comments/collect</div>'
+    +'<p class="muted" style="font-size:12px;margin-top:10px">Send header <code>X-Nexus-Token</code> (or <code>X-Read-Token</code>). Open while login is disabled.</p></div>';
+};
+
+window.syncNow=function(){ toast('Scanning…'); api('/api/sync_resources').then(function(d){ toast('Resources synced'); show('sites'); }).catch(function(e){ toast('Failed: '+e.message); }); };
+
+/* boot */
+(function(){ var h=(location.hash||'').replace('#','')||'overview'; show(TITLES[h]?h:'overview'); })();
+</script>
 </body>
 </html>`;
 }
