@@ -18,8 +18,13 @@ export default {
     const url = new URL(request.url);
     const path = url.pathname;
 
-    // 1. Static Demo Mode or Auth Bypass Check
-    const isDemo = url.searchParams.get('demo') === '1' || path.startsWith('/demo');
+    // 1. View mode: 'actual' (real dashboard) or 'demo' (public sandbox).
+    // Login is disabled while NEXUS_TOKEN is unset, so BOTH views are reachable
+    // without logging in. ?view=actual | ?view=demo switch between them.
+    const loginDisabled = !env.NEXUS_TOKEN;
+    const viewParam = url.searchParams.get('view');
+    const isDemo = viewParam === 'demo' || url.searchParams.get('demo') === '1' || path.startsWith('/demo');
+    const view = isDemo ? 'demo' : 'actual';
     const authHeader = request.headers.get('X-Nexus-Token') || request.headers.get('Authorization')?.replace('Bearer ', '');
     const cookieToken = getCookie(request, 'nexus_token');
     const isAuthenticated = (env.NEXUS_TOKEN && (authHeader === env.NEXUS_TOKEN || cookieToken === env.NEXUS_TOKEN));
@@ -87,8 +92,8 @@ export default {
 
     // 3. API Endpoints
     if (path.startsWith('/api/')) {
-      // Require auth for APIs unless demo mode is active
-      if (!isAuthenticated && !isDemo) {
+      // Require auth for APIs unless demo mode is active (or login disabled)
+      if (!isAuthenticated && !isDemo && !loginDisabled) {
         return new Response(JSON.stringify({ error: 'Authentication required' }), { status: 401, headers: { 'Content-Type': 'application/json' } });
       }
 
@@ -138,14 +143,16 @@ export default {
     }
 
     // 4. Render Main Dashboard or Login Page
-    const renderDemo = isDemo || (!isAuthenticated && !env.NEXUS_TOKEN);
-    if (!isAuthenticated && !renderDemo && path !== '/demo') {
+    // Login page appears ONLY when a NEXUS_TOKEN IS set and the user isn't
+    // authenticated. While login is disabled, actual + demo are both open.
+    const showLogin = !isAuthenticated && !loginDisabled && !isDemo;
+    if (showLogin) {
       return new Response(renderLoginPage(), {
         headers: { 'Content-Type': 'text/html; charset=utf-8' }
       });
     }
 
-    return new Response(renderDashboardHTML({ isDemo: renderDemo }), {
+    return new Response(renderDashboardHTML({ view }), {
       headers: { 'Content-Type': 'text/html; charset=utf-8' }
     });
   },
@@ -497,7 +504,8 @@ function renderLoginPage() {
 </html>`;
 }
 
-function renderDashboardHTML({ isDemo = false } = {}) {
+function renderDashboardHTML({ view = 'actual' } = {}) {
+  const isDemo = view === 'demo';
   return `<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -708,6 +716,21 @@ function renderDashboardHTML({ isDemo = false } = {}) {
       display: flex; justify-content: space-between; align-items: center; margin-top: 10px;
     }
 
+    .mode-bar {
+      display: flex; align-items: center; gap: 12px; flex-wrap: wrap;
+      padding: 10px 18px; font-size: 13px; border-bottom: 1px solid var(--surface-border);
+    }
+    .mode-bar-actual { background: rgba(16, 185, 129, 0.10); }
+    .mode-bar-demo { background: rgba(245, 158, 11, 0.12); }
+    .mode-pill {
+      font-weight: 800; letter-spacing: 0.04em; font-size: 11px;
+      padding: 4px 10px; border-radius: 999px; background: var(--tag-bg);
+    }
+    .mode-bar-actual .mode-pill { color: var(--success); }
+    .mode-bar-demo .mode-pill { color: var(--warning); }
+    .mode-note { color: var(--text-muted); }
+    .mode-switch { margin-left: auto; font-weight: 700; color: var(--accent); text-decoration: none; }
+    .mode-switch:hover { text-decoration: underline; }
     .demo-banner {
       background: linear-gradient(90deg, #0284c7, #2563eb);
       color: white; padding: 8px 16px; font-size: 12px;
@@ -749,11 +772,15 @@ function renderDashboardHTML({ isDemo = false } = {}) {
   </aside>
 
   <main>
-    ${isDemo ? `
-    <div class="demo-banner">
-      <span>👁️ You are browsing in <b>Demo Mode</b> (Public Sandbox). Set <code>NEXUS_TOKEN</code> secret to lock down write operations.</span>
+    <div class="mode-bar ${isDemo ? 'mode-bar-demo' : 'mode-bar-actual'}">
+      <span class="mode-pill">${isDemo ? '👁️ DEMO DASHBOARD' : '✅ ACTUAL DASHBOARD'}</span>
+      <span class="mode-note">${isDemo
+        ? 'Public sandbox view — no login required.'
+        : 'Live view — pulling real data from your bound D1 / KV / Cloudflare resources.'}</span>
+      <a class="mode-switch" href="?view=${isDemo ? 'actual' : 'demo'}">
+        ${isDemo ? '→ Switch to Actual Dashboard' : '→ Switch to Demo Dashboard'}
+      </a>
     </div>
-    ` : ''}
 
     <header>
       <div class="header-left">
