@@ -919,7 +919,7 @@ RENDER.mcp=function(){
 window.syncNow=function(){ toast('Scanning…'); api('/api/sync_resources').then(function(d){ toast('Resources synced'); show('sites'); }).catch(function(e){ toast('Failed: '+e.message); }); };
 
 /* boot */
-(function(){ var h=(location.hash||'').replace('#','')||'overview'; show(TITLES[h]?h:'overview'); })();
+(function(){ $$('.nav-item').forEach(function(a){ a.addEventListener('click', function(ev){ ev.preventDefault(); show(a.dataset.tab); }); }); var h=(location.hash||'').replace('#','')||'overview'; show(TITLES[h]?h:'overview'); })();
 </script>
 </body>
 </html>`;
