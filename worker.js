@@ -843,18 +843,22 @@ window.domCheck=function(){
     .catch(function(e){ $('#domOut').innerHTML='<span class="bad">'+esc(e.message)+'</span>'; });
 };
 
+var BLOCKS=['mode-bar','sidebar','header','overview','sites','d1','kv','crons','github','domains','comments','analytics','notion','config','mcp'];
+function promptFor(list){ var NL=String.fromCharCode(10); var t='Improve the following dashboard block(s). For each, return the revised code and a one-line summary.'+NL+NL; t+=list.map(function(x){ return '- BLOCK: '+(x.file_path||'general')+(x.line_number?' (line '+x.line_number+')':'')+NL+'  NOTE: '+x.comment; }).join(NL); return t; }
 RENDER.comments=function(){
-  $('#view').innerHTML='<div class="card"><div class="card-head"><div class="card-title">💬 Add a comment</div></div>'
-    +'<div class="row"><input id="cmFile" placeholder="file / block (e.g. src/pages/index.astro)" style="max-width:340px"><input id="cmLine" type="number" placeholder="line" style="max-width:110px"><button class="btn btn-sm" onclick="cmVoice()">🎤 Voice</button></div>'
-    +'<textarea id="cmText" rows="3" placeholder="Your note…" style="margin-top:10px"></textarea>'
-    +'<div class="row" style="margin-top:10px"><button class="btn btn-primary btn-sm" onclick="cmAdd()">Add comment</button><button class="btn btn-sm" onclick="cmCopyAll()">📋 Copy all</button></div></div>'
-    +'<div class="card"><div class="card-head"><div class="card-title">📝 Comments</div><span class="muted" style="font-size:11px" id="cmCount"></span></div><div id="cmList">…</div></div>';
+  var dl=BLOCKS.map(function(b){ return '<option value="'+b+'">'; }).join('');
+  $('#view').innerHTML='<div class="card"><div class="card-head"><div class="card-title">\ud83d\udcac Add a comment</div><span class="muted" style="font-size:11px">block-based</span></div>'
+    +'<datalist id="blockList">'+dl+'</datalist>'
+    +'<div class="row"><input id="cmFile" list="blockList" placeholder="block (e.g. header, section-a)" style="max-width:320px"><input id="cmLine" type="number" placeholder="line" style="max-width:110px"><button class="btn btn-sm" onclick="cmVoice()">\ud83c\udfa4 Voice</button></div>'
+    +'<textarea id="cmText" rows="3" placeholder="Your note\u2026" style="margin-top:10px"></textarea>'
+    +'<div class="row" style="margin-top:10px"><button class="btn btn-primary btn-sm" onclick="cmAdd()">Add comment</button><button class="btn btn-sm" onclick="cmPromptAll()">\ud83d\udccb Copy all as Prompt</button></div></div>'
+    +'<div class="card"><div class="card-head"><div class="card-title">\ud83d\udcdd Comments</div><span class="muted" style="font-size:11px" id="cmCount"></span></div><div id="cmList">\u2026</div></div>';
   cmLoad();
 };
 window.cmLoad=function(){
   api('/api/comments').then(function(d){
     var c=(d.comments||[]); $('#cmCount').textContent=c.length+' saved';
-    var html=c.map(function(x){ return '<div style="padding:8px 0;border-bottom:1px solid var(--border)"><div class="mono muted" style="font-size:11px">'+esc(x.file_path||'general')+(x.line_number?':'+esc(x.line_number):'')+' \u00b7 '+esc(x.created_at||'')+'</div><div style="margin-top:3px">'+esc(x.comment)+'</div></div>'; }).join('');
+    var html=c.map(function(x){ return '<div style="padding:9px 0;border-bottom:1px solid var(--border)"><div class="mono muted" style="font-size:11px">'+esc(x.file_path||'general')+(x.line_number?':'+esc(x.line_number):'')+' \u00b7 '+esc(x.created_at||'')+'</div><div class="row" style="justify-content:space-between;align-items:flex-start;gap:10px;margin-top:4px"><div>'+esc(x.comment)+'</div><button class="btn btn-sm" onclick="cmPromptOne(\''+x.id+'\')">\ud83d\udccb Prompt</button></div></div>'; }).join('');
     $('#cmList').innerHTML=html||'<span class="muted">No comments yet.</span>';
   }).catch(function(e){ $('#cmList').innerHTML='<span class="bad">'+esc(e.message)+'</span>'; });
 };
@@ -864,12 +868,8 @@ window.cmAdd=function(){
     .then(function(){ $('#cmText').value=''; toast('Comment added'); cmLoad(); })
     .catch(function(e){ toast('Failed: '+e.message); });
 };
-window.cmCopyAll=function(){
-  api('/api/comments').then(function(d){
-    var txt=(d.comments||[]).map(function(x){ return (x.file_path||'general')+(x.line_number?':'+x.line_number:'')+' — '+x.comment; }).join('\n');
-    navigator.clipboard.writeText(txt).then(function(){ toast('Copied '+((d.comments||[]).length)+' comments'); });
-  });
-};
+window.cmPromptOne=function(id){ api('/api/comments').then(function(d){ var x=(d.comments||[]).filter(function(c){return c.id===id;})[0]; if(!x) return; navigator.clipboard.writeText(promptFor([x])).then(function(){ toast('Prompt copied'); }); }); };
+window.cmPromptAll=function(){ api('/api/comments').then(function(d){ var c=d.comments||[]; if(!c.length){ toast('No comments to export'); return; } navigator.clipboard.writeText(promptFor(c)).then(function(){ toast('Prompt copied ('+c.length+')'); }); }); };
 window.cmVoice=function(){
   var SR=window.SpeechRecognition||window.webkitSpeechRecognition;
   if(!SR){ toast('Voice not supported in this browser'); return; }
