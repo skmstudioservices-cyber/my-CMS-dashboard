@@ -858,7 +858,7 @@ RENDER.comments=function(){
 window.cmLoad=function(){
   api('/api/comments').then(function(d){
     var c=(d.comments||[]); $('#cmCount').textContent=c.length+' saved';
-    var html=c.map(function(x){ return '<div style="padding:9px 0;border-bottom:1px solid var(--border)"><div class="mono muted" style="font-size:11px">'+esc(x.file_path||'general')+(x.line_number?':'+esc(x.line_number):'')+' \u00b7 '+esc(x.created_at||'')+'</div><div class="row" style="justify-content:space-between;align-items:flex-start;gap:10px;margin-top:4px"><div>'+esc(x.comment)+'</div><button class="btn btn-sm" onclick="cmPromptOne(\''+x.id+'\')">\ud83d\udccb Prompt</button></div></div>'; }).join('');
+    var html=c.map(function(x){ return '<div style="padding:9px 0;border-bottom:1px solid var(--border)"><div class="mono muted" style="font-size:11px">'+esc(x.file_path||'general')+(x.line_number?':'+esc(x.line_number):'')+' \u00b7 '+esc(x.created_at||'')+'</div><div class="row" style="justify-content:space-between;align-items:flex-start;gap:10px;margin-top:4px"><div>'+esc(x.comment)+'</div><button class="btn btn-sm" onclick="cmPromptOne(&#39;'+x.id+'&#39;)">\ud83d\udccb Prompt</button></div></div>'; }).join('');
     $('#cmList').innerHTML=html||'<span class="muted">No comments yet.</span>';
   }).catch(function(e){ $('#cmList').innerHTML='<span class="bad">'+esc(e.message)+'</span>'; });
 };
