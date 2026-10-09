@@ -1,0 +1,190 @@
+---
+import '../styles/global.css';
+---
+<!doctype html>
+<html lang="en" data-theme="skmlight">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Nexus CMS — Phase 0 Preview</title>
+  <meta name="robots" content="noindex,nofollow" />
+  <meta name="theme-color" content="#2563eb" />
+  <style>
+    :root { color-scheme: light; }
+    body { margin: 0; background: #f7f8fa; color: #0f172a; font-family: Inter, system-ui, -apple-system, "Segoe UI", sans-serif; }
+    button, input, textarea { font: inherit; }
+    .shell { min-height: 100vh; display:grid; grid-template-columns: 248px minmax(0,1fr); }
+    .side { background:#0f172a; color:#e6ebf3; padding:24px 16px; }
+    .brand { font-size:18px; font-weight:800; letter-spacing:-.03em; padding:0 12px 28px; }
+    .nav-label { color:#94a3b8; font-size:11px; text-transform:uppercase; letter-spacing:.12em; padding:18px 12px 8px; }
+    .nav { display:block; color:#cbd5e1; padding:11px 12px; margin:3px 0; border-radius:9px; text-decoration:none; font-size:14px; }
+    .nav.active { color:white; background:#26364f; }
+    .main { min-width:0; }
+    .top { min-height:72px; display:flex; align-items:center; justify-content:space-between; gap:16px; padding:0 30px; background:#fff; border-bottom:1px solid #e7ebf0; position:sticky; top:0; z-index:5; }
+    .eyebrow { font-size:12px; color:#64748b; }
+    .feedback-btn,.primary { border:0; background:#2563eb; color:#fff; padding:10px 15px; border-radius:9px; cursor:pointer; font-weight:650; }
+    .feedback-btn:hover,.primary:hover { background:#1d4ed8; }
+    .content { padding:30px; max-width:1200px; margin:auto; }
+    h1 { font-size:28px; letter-spacing:-.04em; margin:0 0 7px; }
+    .sub { color:#64748b; margin:0 0 26px; font-size:14px; }
+    .grid { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:16px; }
+    .card { background:#fff; border:1px solid #e7ebf0; border-radius:14px; padding:20px; box-shadow:0 2px 7px #0f172a05; }
+    .label { color:#64748b; font-size:13px; }
+    .value { font-size:27px; font-weight:750; letter-spacing:-.04em; margin:10px 0 4px; }
+    .hint { font-size:12px; color:#64748b; }
+    .section-head { display:flex; align-items:center; justify-content:space-between; gap:12px; margin:28px 0 12px; }
+    h2 { font-size:17px; margin:0; }
+    .table { width:100%; border-collapse:collapse; font-size:13px; }
+    .table th,.table td { padding:13px 10px; text-align:left; border-bottom:1px solid #edf0f4; }
+    .table th { color:#64748b; font-weight:600; }
+    .status { display:inline-block; padding:4px 8px; border-radius:99px; background:#dcfce7; color:#166534; font-size:11px; }
+    .note { background:#eff6ff; color:#1e40af; border:1px solid #bfdbfe; padding:13px 15px; border-radius:10px; font-size:13px; margin-top:20px; }
+    dialog { border:0; border-radius:16px; padding:0; width:min(640px,calc(100vw - 28px)); max-width:none; box-shadow:0 24px 80px #0f172a40; color:#0f172a; }
+    dialog::backdrop { background:#0f172a80; backdrop-filter:blur(3px); }
+    .modal-head { display:flex; justify-content:space-between; align-items:center; padding:20px 22px; border-bottom:1px solid #e7ebf0; }
+    .modal-body { padding:22px; }
+    .modal-foot { display:flex; flex-wrap:wrap; justify-content:space-between; align-items:center; gap:10px; padding:16px 22px; border-top:1px solid #e7ebf0; background:#f8fafc; }
+    .close { border:0; background:transparent; cursor:pointer; font-size:22px; color:#64748b; }
+    .field-label { display:block; font-weight:650; font-size:13px; margin-bottom:8px; }
+    textarea { width:100%; box-sizing:border-box; resize:vertical; min-height:120px; border:1px solid #cbd5e1; border-radius:10px; padding:12px; outline:none; }
+    textarea:focus { border-color:#2563eb; box-shadow:0 0 0 3px #2563eb20; }
+    .tools { display:flex; flex-wrap:wrap; gap:8px; margin:12px 0 18px; }
+    .secondary { border:1px solid #cbd5e1; background:#fff; color:#334155; padding:9px 12px; border-radius:9px; cursor:pointer; }
+    .secondary:disabled { opacity:.45; cursor:not-allowed; }
+    .small { font-size:12px; color:#64748b; }
+    .notes { display:grid; gap:8px; margin-top:14px; }
+    .note-item { border:1px solid #e2e8f0; border-radius:10px; padding:11px 12px; display:flex; align-items:flex-start; justify-content:space-between; gap:12px; font-size:13px; white-space:pre-wrap; overflow-wrap:anywhere; background:#fff; }
+    .remove { border:0; background:transparent; color:#b91c1c; cursor:pointer; padding:0 2px; }
+    .empty { color:#94a3b8; border:1px dashed #cbd5e1; padding:16px; text-align:center; border-radius:10px; font-size:13px; }
+    #toast { position:fixed; bottom:18px; right:18px; background:#0f172a; color:white; padding:11px 15px; border-radius:10px; font-size:13px; box-shadow:0 8px 24px #0f172a30; z-index:10; }
+    .mobile-nav { display:none; }
+    @media(max-width:900px) { .shell { grid-template-columns:1fr; } .side { display:none; } .grid { grid-template-columns:repeat(2,minmax(0,1fr)); } .top { padding:0 18px; } .content { padding:22px 18px; } .mobile-nav { display:block; } }
+    @media(max-width:520px) { .grid { grid-template-columns:1fr; } .top { align-items:flex-start; padding:15px; } .top .feedback-btn { padding:9px 10px; } .content { padding:20px 14px; } .value { font-size:24px; } .table th:nth-child(3),.table td:nth-child(3) { display:none; } }
+  </style>
+</head>
+<body>
+  <div class="shell">
+    <aside class="side">
+      <div class="brand">◈ Nexus CMS</div>
+      <div class="nav-label">Core</div>
+      <a class="nav active" href="#overview">▦ &nbsp; Overview</a>
+      <a class="nav" href="#sites">◫ &nbsp; Sites &amp; Stacks</a>
+      <div class="nav-label">Data</div>
+      <a class="nav" href="#databases">▤ &nbsp; D1 Databases</a>
+      <a class="nav" href="#kv">◇ &nbsp; KV Namespaces</a>
+      <div class="nav-label">Operations</div>
+      <a class="nav" href="#crons">◷ &nbsp; Crons</a>
+      <a class="nav" href="#runs">⌘ &nbsp; GitHub Runs</a>
+      <a class="nav" href="#domains">◎ &nbsp; Domain Checker</a>
+      <div class="nav-label">Workspace</div>
+      <a class="nav" href="#feedback" id="navFeedback">☷ &nbsp; Feedback notes</a>
+      <a class="nav" href="#config">⚙ &nbsp; Config</a>
+    </aside>
+    <main class="main" id="overview">
+      <header class="top">
+        <div><div class="eyebrow">SKM Studio Network / Mission Control</div><strong class="mobile-nav">Nexus CMS · Phase 0 preview</strong></div>
+        <button class="feedback-btn" id="openFeedback" type="button">＋ Give feedback</button>
+      </header>
+      <div class="content">
+        <h1>Overview</h1>
+        <p class="sub">Your control center foundation · Phase 0 preview data</p>
+        <section class="grid" aria-label="Summary statistics">
+          <article class="card"><div class="label">Connected sites</div><div class="value">—</div><div class="hint">Live connection not wired yet</div></article>
+          <article class="card"><div class="label">D1 databases</div><div class="value">—</div><div class="hint">Live connection not wired yet</div></article>
+          <article class="card"><div class="label">Open feedback notes</div><div class="value" id="feedbackCount">0</div><div class="hint">Saved in this browser</div></article>
+          <article class="card"><div class="label">Deployment</div><div class="value" style="font-size:20px">Preview</div><div class="hint">Not deployed from this feature branch</div></article>
+        </section>
+        <div class="section-head"><h2>Workspace foundation</h2><span class="eyebrow">Phase 0</span></div>
+        <section class="card">
+          <table class="table">
+            <thead><tr><th>Area</th><th>Purpose</th><th>State</th></tr></thead>
+            <tbody>
+              <tr><td>Overview</td><td>One place to review system status</td><td><span class="status">Preview shell</span></td></tr>
+              <tr><td>Sites &amp; Stacks</td><td>Review connected projects and frameworks</td><td><span class="status">Navigation placeholder</span></td></tr>
+              <tr><td>Data &amp; Operations</td><td>Databases, KV, scheduled jobs and runs</td><td><span class="status">Navigation placeholder</span></td></tr>
+              <tr><td>Global feedback</td><td>Collect voice or written notes in one export</td><td><span class="status">Available in preview</span></td></tr>
+            </tbody>
+          </table>
+        </section>
+        <div class="note">This is a reviewable Phase 0 UI skeleton. The site/database figures are deliberately not presented as live data yet.</div>
+      </div>
+    </main>
+  </div>
+
+  <dialog id="feedbackDialog" aria-labelledby="feedbackTitle">
+    <div class="modal-head"><div><strong id="feedbackTitle">Global feedback</strong><div class="small">Name the tab, section, button, or change in your own words.</div></div><button class="close" id="closeFeedback" type="button" aria-label="Close feedback">×</button></div>
+    <div class="modal-body">
+      <label class="field-label" for="feedbackText">Your feedback</label>
+      <textarea id="feedbackText" placeholder="Example: On the Sites & Stacks tab, make the status column easier to scan. Or simply describe what you want changed."></textarea>
+      <div class="tools"><button class="secondary" id="voiceBtn" type="button">🎙 Start voice input</button><button class="secondary" id="stopVoiceBtn" type="button" disabled>Stop dictation</button><span class="small" id="voiceStatus" role="status">Typing is always available.</span></div>
+      <button class="primary" id="addFeedback" type="button">Add feedback note</button>
+      <div class="section-head"><h2>Collected notes</h2><span class="small" id="noteCount">0 notes</span></div>
+      <div class="notes" id="notesList"><div class="empty">Your notes will appear here.</div></div>
+    </div>
+    <div class="modal-foot"><span class="small">Notes are saved in this browser only.</span><div class="tools" style="margin:0"><button class="secondary" id="clearFeedback" type="button">Clear all</button><button class="primary" id="copyFeedback" type="button">Copy all feedback</button></div></div>
+  </dialog>
+  <div id="toast" role="status" hidden></div>
+  <script>
+    const $ = (selector) => document.querySelector(selector);
+    const dialog = $('#feedbackDialog');
+    const input = $('#feedbackText');
+    const list = $('#notesList');
+    const storeKey = 'nexus-phase0-feedback';
+    let notes = [];
+    try { notes = JSON.parse(localStorage.getItem(storeKey) || '[]'); if (!Array.isArray(notes)) notes = []; } catch { notes = []; }
+    let recognition = null;
+    let isListening = false;
+    let toastTimer;
+    function toast(message) { const el = $('#toast'); el.textContent = message; el.hidden = false; clearTimeout(toastTimer); toastTimer = setTimeout(() => el.hidden = true, 2600); }
+    function save() { try { localStorage.setItem(storeKey, JSON.stringify(notes)); } catch { toast('Browser storage is unavailable. Copy your notes before leaving.'); } render(); }
+    function render() {
+      $('#feedbackCount').textContent = String(notes.length);
+      $('#noteCount').textContent = notes.length + (notes.length === 1 ? ' note' : ' notes');
+      list.replaceChildren();
+      if (!notes.length) { const empty = document.createElement('div'); empty.className = 'empty'; empty.textContent = 'Your notes will appear here.'; list.append(empty); return; }
+      notes.forEach((note, index) => {
+        const item = document.createElement('div'); item.className = 'note-item';
+        const text = document.createElement('div'); text.textContent = (index + 1) + '. ' + note.text;
+        const remove = document.createElement('button'); remove.className = 'remove'; remove.type = 'button'; remove.textContent = 'Remove'; remove.setAttribute('aria-label', 'Remove feedback note ' + (index + 1));
+        remove.addEventListener('click', () => { notes.splice(index, 1); save(); });
+        item.append(text, remove); list.append(item);
+      });
+    }
+    $('#openFeedback').addEventListener('click', () => dialog.showModal());
+    $('#navFeedback').addEventListener('click', (event) => { event.preventDefault(); dialog.showModal(); });
+    $('#closeFeedback').addEventListener('click', () => dialog.close());
+    dialog.addEventListener('click', (event) => { if (event.target === dialog) dialog.close(); });
+    $('#addFeedback').addEventListener('click', () => {
+      const text = input.value.trim();
+      if (!text) { input.focus(); toast('Write or dictate a note first.'); return; }
+      notes.push({ text, createdAt: new Date().toISOString() }); input.value = ''; save(); input.focus(); toast('Feedback note added.');
+    });
+    $('#clearFeedback').addEventListener('click', () => { if (!notes.length) return; notes = []; save(); toast('All feedback notes cleared.'); });
+    $('#copyFeedback').addEventListener('click', async () => {
+      if (!notes.length) { toast('Add at least one feedback note first.'); return; }
+      const output = ['Please apply the following feedback to the Nexus CMS Phase 0 dashboard:', '', ...notes.map((note, i) => (i + 1) + '. ' + note.text), '', 'Preserve each note’s wording. Use the named tab, section, button, or control as the target; if a location is unclear, ask only if it blocks implementation.'].join('\n');
+      try { await navigator.clipboard.writeText(output); toast('All feedback copied as one prompt.'); }
+      catch { const temp = document.createElement('textarea'); temp.value = output; document.body.append(temp); temp.select(); const ok = document.execCommand('copy'); temp.remove(); if (ok) toast('All feedback copied as one prompt.'); else { input.value = output; input.focus(); input.select(); toast('Clipboard blocked; export text is selected for manual copying.'); } }
+    });
+    function setVoiceState(message, listening = false) { $('#voiceStatus').textContent = message; $('#voiceBtn').disabled = listening; $('#stopVoiceBtn').disabled = !listening; }
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (SpeechRecognition) {
+      recognition = new SpeechRecognition(); recognition.lang = 'en-IN'; recognition.continuous = true; recognition.interimResults = true;
+      recognition.onstart = () => { isListening = true; setVoiceState('Listening… speak your feedback.', true); };
+      recognition.onresult = (event) => {
+        let finalText = '';
+        for (let i = event.resultIndex; i < event.results.length; i++) if (event.results[i].isFinal) finalText += event.results[i][0].transcript + ' ';
+        if (finalText) input.value = (input.value ? input.value.trimEnd() + ' ' : '') + finalText.trim();
+      };
+      recognition.onerror = (event) => { isListening = false; setVoiceState('Voice input unavailable (' + event.error + '). You can type instead.'); };
+      recognition.onend = () => { isListening = false; setVoiceState('Dictation stopped. Review the text, then add the note.'); };
+      $('#voiceBtn').addEventListener('click', () => { try { recognition.start(); } catch { setVoiceState('Could not start voice input. Try again or type instead.'); } });
+      $('#stopVoiceBtn').addEventListener('click', () => recognition.stop());
+    } else {
+      $('#voiceBtn').disabled = true;
+      setVoiceState('Voice recognition is not supported in this browser. Typing is available.');
+    }
+    render();
+  </script>
+</body>
+</html>
