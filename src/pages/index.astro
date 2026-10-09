@@ -1,6 +1,34 @@
 ---
-// BLOCK:PAGE-INDEX — the dashboard shell (PWA, noindex). Sections are rendered
-// by the client engine in Base.astro; each carries a data-block label.
-import Base from '../layouts/Base.astro';
+// SKELETON — clean slate. Astro + Tailwind v4 + daisyUI are wired; the Worker deploys.
+// Replace this page with your own dashboard. See PRD.md for the full spec.
+import '../styles/global.css';
 ---
-<Base title="Nexus CMS — Mission Control" />
+<!DOCTYPE html>
+<html lang="en" data-theme="skmlight">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Nexus CMS — skeleton</title>
+  <meta name="robots" content="noindex, nofollow" />
+  <meta name="theme-color" content="#2563eb" />
+  <link rel="manifest" href="/manifest.webmanifest" />
+  <link rel="icon" href="/icon.svg" type="image/svg+xml" />
+</head>
+<body class="bg-base-200 text-base-content">
+  <main class="mx-auto max-w-3xl p-8">
+    <div class="card bg-base-100 border border-base-300 shadow-sm">
+      <div class="card-body">
+        <h1 class="card-title">Nexus CMS — skeleton</h1>
+        <p class="opacity-70">Clean slate. Build your dashboard here.</p>
+        <ul class="list-disc pl-5 text-sm opacity-70">
+          <li>Pages → <code>src/pages/</code> (edit <code>index.astro</code>)</li>
+          <li>API → <code>src/pages/api/</code></li>
+          <li>Styles → <code>src/styles/global.css</code> (Tailwind + daisyUI + themes)</li>
+          <li>D1 / KV bindings → <code>wrangler.jsonc</code></li>
+          <li>Data schema → <code>schema.sql</code> (14 <code>cms_*</code> tables)</li>
+        </ul>
+      </div>
+    </div>
+  </main>
+</body>
+</html>
