@@ -1,7 +1,7 @@
 ---
-// BLOCK:PAGE-WIREFRAME — a playground of flexible containers + columns.
-// Arrange boxes to sketch a layout, then "Copy code" and send it — I build it
-// fully responsive. No backend needed.
+// BLOCK:PAGE-WIREFRAME — a drag-and-drop wireframe builder (Elementor-style).
+// Add blocks, drag to move/nest, then "Copy code" (commented HTML) and send it.
+// I build the real thing fully responsive. No backend.
 import '../styles/global.css';
 ---
 <!DOCTYPE html>
@@ -9,19 +9,33 @@ import '../styles/global.css';
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Nexus CMS — wireframe playground</title>
+  <title>Nexus CMS — wireframe builder</title>
   <meta name="robots" content="noindex, nofollow" />
   <meta name="theme-color" content="#2563eb" />
   <link rel="manifest" href="/manifest.webmanifest" />
   <link rel="icon" href="/icon.svg" type="image/svg+xml" />
+  <style>
+    /* builder-only chrome (custom CSS is fine here) */
+    .wf-node { position: relative; border: 1px solid var(--color-base-300); border-radius: 0.5rem; background: var(--color-base-100); margin: 2px 0; }
+    .wf-bar { display: flex; align-items: center; gap: 6px; padding: 4px 6px; border-bottom: 1px dashed var(--color-base-300); }
+    .wf-handle { cursor: grab; font-size: 14px; opacity: .5; padding: 0 3px; }
+    .wf-handle:active { cursor: grabbing; }
+    .wf-body { padding: 6px; }
+    .wf-children { padding: 4px; min-height: 34px; }
+    .wf-empty { border: 1px dashed var(--color-base-300); border-radius: 0.4rem; padding: 8px; text-align: center; font-size: 11px; opacity: .5; }
+    .drop-slot { height: 6px; border-radius: 4px; transition: background .1s, height .1s; }
+    .drop-slot.over { height: 26px; background: color-mix(in oklab, var(--color-primary) 30%, transparent); border: 1px dashed var(--color-primary); }
+    .dragging { opacity: .4; }
+    .wf-root.over { outline: 2px dashed var(--color-primary); }
+  </style>
 </head>
 <body class="bg-base-200 text-base-content">
   <div class="flex min-h-screen flex-col">
     <!-- BLOCK:HEADER -->
     <header class="navbar sticky top-0 z-30 border-b border-base-300 bg-base-100/90 px-4 backdrop-blur">
       <div class="flex-1">
-        <span class="text-lg font-bold">🧩 Wireframe playground</span>
-        <span class="ml-2 text-xs opacity-60">arrange boxes → copy code → send to me</span>
+        <span class="text-lg font-bold">🧩 Wireframe builder</span>
+        <span class="ml-2 text-xs opacity-60">drag ⠿ to move · drop into a container to nest</span>
       </div>
       <div class="flex-none gap-2">
         <button class="btn btn-sm" id="btnClear">Clear</button>
@@ -32,23 +46,19 @@ import '../styles/global.css';
 
     <div class="flex flex-1 flex-col lg:flex-row">
       <!-- BLOCK:PALETTE -->
-      <aside class="w-full shrink-0 border-b border-base-300 bg-base-100 p-4 lg:w-72 lg:border-b-0 lg:border-r" data-block="palette">
-        <div class="text-xs font-semibold uppercase tracking-wide opacity-60">Add a block</div>
+      <aside class="w-full shrink-0 border-b border-base-300 bg-base-100 p-4 lg:w-72 lg:border-b-0 lg:border-r">
+        <div class="text-xs font-semibold uppercase tracking-wide opacity-60">Blocks — click to add</div>
         <div id="palette" class="mt-3 grid grid-cols-2 gap-2"></div>
         <div class="mt-4 text-xs opacity-60">
-          Click a block to add it to the canvas. Reorder with ↑ ↓, remove with ✕.
-          When happy: <b>Copy code</b> and paste it to me.
+          <b>Move:</b> drag the ⠿ handle. <b>Nest:</b> drop onto a dashed zone inside a container/row/grid.
+          <b>Then:</b> Copy code → paste it to me.
         </div>
       </aside>
 
       <!-- BLOCK:CANVAS -->
       <main class="min-w-0 flex-1 p-4 lg:p-6">
         <div class="mb-3 text-xs font-semibold uppercase tracking-wide opacity-60">Canvas</div>
-        <div id="canvas" class="flex flex-col gap-3" data-block="canvas">
-          <div class="rounded-box border-2 border-dashed border-base-300 p-10 text-center opacity-60">
-            Empty — add blocks from the left
-          </div>
-        </div>
+        <div id="canvas" class="wf-root rounded-box border-2 border-dashed border-base-300 p-3"></div>
       </main>
     </div>
   </div>
@@ -57,7 +67,7 @@ import '../styles/global.css';
   <dialog id="dlgCode" class="modal">
     <div class="modal-box max-w-3xl">
       <h3 class="text-lg font-bold">Generated code</h3>
-      <p class="mt-1 text-sm opacity-60">Commented HTML — send this to me and I'll build it fully responsive.</p>
+      <p class="mt-1 text-sm opacity-60">Commented, nested HTML — send this to me and I'll build it fully responsive.</p>
       <pre id="codeOut" class="mt-3 max-h-96 overflow-auto rounded-box border border-base-300 bg-base-200 p-4 text-xs"></pre>
       <div class="modal-action">
         <button class="btn btn-ghost" data-close>Close</button>
@@ -69,94 +79,124 @@ import '../styles/global.css';
   <div id="toast" class="toast toast-end z-50 hidden"><div class="alert alert-info"><span id="toastMsg"></span></div></div>
 
   <script>
-    // ===== BLOCK:PLAYGROUND-ENGINE =====
+    // ===== BLOCK:BUILDER-ENGINE (drag-drop tree) =====
     const $ = (s, r = document) => r.querySelector(s);
     function toast(m) { $('#toastMsg').textContent = m; const t = $('#toast'); t.classList.remove('hidden'); clearTimeout(t._t); t._t = setTimeout(() => t.classList.add('hidden'), 2400); }
 
-    // each palette entry = a flexible primitive the user can drop in
+    const CONTAINERS = new Set(['container', 'row', 'grid2', 'grid3', 'grid4', 'card', 'sidebar', 'header']);
     const TYPES = [
       { type: 'container', label: '📦 Container', hint: 'full-width box' },
-      { type: 'row', label: '➡️ Row', hint: 'flex row' },
+      { type: 'row', label: '➡️ Row', hint: 'side-by-side' },
       { type: 'grid2', label: '▥ Grid 2', hint: '2 columns' },
       { type: 'grid3', label: '▦ Grid 3', hint: '3 columns' },
       { type: 'grid4', label: '▩ Grid 4', hint: '4 columns' },
       { type: 'card', label: '🃏 Card', hint: 'panel' },
-      { type: 'stat', label: '📊 Stat', hint: 'KPI number' },
-      { type: 'table', label: '▤ Table', hint: 'data table' },
+      { type: 'stat', label: '📊 Stat', hint: 'KPI' },
+      { type: 'table', label: '▤ Table', hint: 'data' },
       { type: 'header', label: '⬛ Header', hint: 'top bar' },
-      { type: 'sidebar', label: '◧ Sidebar', hint: 'left column' },
+      { type: 'sidebar', label: '◧ Sidebar', hint: 'nav + content' },
       { type: 'button', label: '🔘 Button', hint: 'action' },
       { type: 'text', label: '✏️ Text', hint: 'paragraph' },
-      { type: 'image', label: '🖼️ Image', hint: 'media box' },
-      { type: 'spacer', label: '↕️ Spacer', hint: 'vertical gap' },
+      { type: 'image', label: '🖼️ Image', hint: 'media' },
+      { type: 'spacer', label: '↕️ Spacer', hint: 'gap' },
     ];
     const PREVIEW = {
-      container: '<div class="rounded border-2 border-dashed border-base-300 p-4 text-xs opacity-60">Container — full width</div>',
-      row: '<div class="flex gap-2"><div class="flex-1 rounded border-2 border-dashed border-base-300 p-3 text-xs opacity-60">item</div><div class="flex-1 rounded border-2 border-dashed border-base-300 p-3 text-xs opacity-60">item</div><div class="flex-1 rounded border-2 border-dashed border-base-300 p-3 text-xs opacity-60">item</div></div>',
-      grid2: '<div class="grid grid-cols-2 gap-2"><div class="rounded border-2 border-dashed border-base-300 p-4 text-xs opacity-60">1</div><div class="rounded border-2 border-dashed border-base-300 p-4 text-xs opacity-60">2</div></div>',
-      grid3: '<div class="grid grid-cols-3 gap-2"><div class="rounded border-2 border-dashed border-base-300 p-4 text-xs opacity-60">1</div><div class="rounded border-2 border-dashed border-base-300 p-4 text-xs opacity-60">2</div><div class="rounded border-2 border-dashed border-base-300 p-4 text-xs opacity-60">3</div></div>',
-      grid4: '<div class="grid grid-cols-4 gap-2"><div class="rounded border-2 border-dashed border-base-300 p-4 text-xs opacity-60">1</div><div class="rounded border-2 border-dashed border-base-300 p-4 text-xs opacity-60">2</div><div class="rounded border-2 border-dashed border-base-300 p-4 text-xs opacity-60">3</div><div class="rounded border-2 border-dashed border-base-300 p-4 text-xs opacity-60">4</div></div>',
-      card: '<div class="card bg-base-100 border border-base-300 shadow-sm"><div class="card-body"><div class="card-title text-sm">Card title</div><div class="h-10 rounded bg-base-200"></div></div></div>',
-      stat: '<div class="stats bg-base-100 border border-base-300 shadow-sm"><div class="stat"><div class="stat-title text-xs">Metric</div><div class="stat-value text-2xl">1,234</div></div></div>',
-      table: '<div class="overflow-x-auto rounded-box border border-base-300"><table class="table table-sm"><thead><tr><th>A</th><th>B</th></tr></thead><tbody><tr><td>—</td><td>—</td></tr></tbody></table></div>',
-      header: '<div class="flex items-center justify-between rounded border-2 border-dashed border-base-300 p-3 text-xs opacity-60"><span>Header / title</span><span>actions</span></div>',
-      sidebar: '<div class="flex gap-2"><div class="w-32 rounded border-2 border-dashed border-base-300 p-4 text-xs opacity-60">sidebar</div><div class="flex-1 rounded border-2 border-dashed border-base-300 p-4 text-xs opacity-60">content</div></div>',
-      button: '<div><button class="btn btn-sm btn-primary">Button</button></div>',
-      text: '<p class="text-sm opacity-60">A paragraph of text goes here.</p>',
-      image: '<div class="flex h-24 items-center justify-center rounded border-2 border-dashed border-base-300 text-xs opacity-60">image / media</div>',
-      spacer: '<div class="h-8 rounded border-2 border-dashed border-base-300"></div>',
+      stat: '<div class="stats bg-base-100 border border-base-300"><div class="stat"><div class="stat-title text-xs">Metric</div><div class="stat-value text-xl">1,234</div></div></div>',
+      table: '<div class="overflow-x-auto border border-base-300 rounded"><table class="table table-sm"><thead><tr><th>A</th><th>B</th></tr></thead><tbody><tr><td>—</td><td>—</td></tr></tbody></table></div>',
+      button: '<button class="btn btn-sm btn-primary">Button</button>',
+      text: '<p class="text-sm opacity-60">A paragraph of text.</p>',
+      image: '<div class="flex h-20 items-center justify-center rounded border border-dashed border-base-300 text-xs opacity-60">image / media</div>',
+      spacer: '<div class="h-6 rounded border border-dashed border-base-300"></div>',
     };
-    // exported code per type (commented, data-block named)
     const CODE = {
-      container: (n) => `<!-- BLOCK:${n} -->\n<section class="container mx-auto px-4 py-6" data-block="${n}">\n  <!-- content -->\n</section>`,
-      row: (n) => `<!-- BLOCK:${n} -->\n<div class="flex flex-col gap-4 md:flex-row" data-block="${n}">\n  <div class="flex-1"><!-- item --></div>\n  <div class="flex-1"><!-- item --></div>\n  <div class="flex-1"><!-- item --></div>\n</div>`,
-      grid2: (n) => `<!-- BLOCK:${n} -->\n<div class="grid grid-cols-1 gap-4 sm:grid-cols-2" data-block="${n}">\n  <div><!-- 1 --></div><div><!-- 2 --></div>\n</div>`,
-      grid3: (n) => `<!-- BLOCK:${n} -->\n<div class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3" data-block="${n}">\n  <div><!-- 1 --></div><div><!-- 2 --></div><div><!-- 3 --></div>\n</div>`,
-      grid4: (n) => `<!-- BLOCK:${n} -->\n<div class="grid grid-cols-2 gap-4 lg:grid-cols-4" data-block="${n}">\n  <div><!-- 1 --></div><div><!-- 2 --></div><div><!-- 3 --></div><div><!-- 4 --></div>\n</div>`,
-      card: (n) => `<!-- BLOCK:${n} -->\n<div class="card bg-base-100 border border-base-300 shadow-sm" data-block="${n}">\n  <div class="card-body"><h2 class="card-title"><!-- title --></h2><!-- body --></div>\n</div>`,
-      stat: (n) => `<!-- BLOCK:${n} -->\n<div class="stats bg-base-100 border border-base-300 shadow-sm" data-block="${n}">\n  <div class="stat"><div class="stat-title"><!-- label --></div><div class="stat-value"><!-- value --></div></div>\n</div>`,
-      table: (n) => `<!-- BLOCK:${n} -->\n<div class="overflow-x-auto rounded-box border border-base-300" data-block="${n}">\n  <table class="table"><thead><tr><th><!-- col --></th></tr></thead><tbody><tr><td><!-- cell --></td></tr></tbody></table>\n</div>`,
-      header: (n) => `<!-- BLOCK:${n} -->\n<header class="flex items-center justify-between border-b border-base-300 px-4 py-3" data-block="${n}">\n  <span><!-- title --></span><div><!-- actions --></div>\n</header>`,
-      sidebar: (n) => `<!-- BLOCK:${n} -->\n<div class="flex flex-col gap-4 lg:flex-row" data-block="${n}">\n  <aside class="w-full lg:w-64"><!-- nav --></aside>\n  <main class="min-w-0 flex-1"><!-- content --></main>\n</div>`,
+      container: (n, inner) => `<!-- BLOCK:${n} -->\n<section class="container mx-auto px-4 py-6" data-block="${n}">\n${inner || '  <!-- content -->'}\n</section>`,
+      row: (n, inner) => `<!-- BLOCK:${n} -->\n<div class="flex flex-col gap-4 md:flex-row" data-block="${n}">\n${inner || '  <!-- items -->'}\n</div>`,
+      grid2: (n, inner) => `<!-- BLOCK:${n} -->\n<div class="grid grid-cols-1 gap-4 sm:grid-cols-2" data-block="${n}">\n${inner || '  <!-- cells -->'}\n</div>`,
+      grid3: (n, inner) => `<!-- BLOCK:${n} -->\n<div class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3" data-block="${n}">\n${inner || '  <!-- cells -->'}\n</div>`,
+      grid4: (n, inner) => `<!-- BLOCK:${n} -->\n<div class="grid grid-cols-2 gap-4 lg:grid-cols-4" data-block="${n}">\n${inner || '  <!-- cells -->'}\n</div>`,
+      card: (n, inner) => `<!-- BLOCK:${n} -->\n<div class="card bg-base-100 border border-base-300 shadow-sm" data-block="${n}">\n  <div class="card-body">\n${inner || '    <!-- body -->'}\n  </div>\n</div>`,
+      header: (n, inner) => `<!-- BLOCK:${n} -->\n<header class="flex items-center justify-between border-b border-base-300 px-4 py-3" data-block="${n}">\n${inner || '  <!-- title / actions -->'}\n</header>`,
+      sidebar: (n, inner) => `<!-- BLOCK:${n} -->\n<div class="flex flex-col gap-4 lg:flex-row" data-block="${n}">\n${inner || '  <!-- nav + content -->'}\n</div>`,
+      stat: (n) => `<!-- BLOCK:${n} -->\n<div class="stat bg-base-100 border border-base-300" data-block="${n}"><div class="stat-title"><!-- label --></div><div class="stat-value"><!-- value --></div></div>`,
+      table: (n) => `<!-- BLOCK:${n} -->\n<div class="overflow-x-auto border border-base-300" data-block="${n}"><table class="table"><thead><tr><th><!-- col --></th></tr></thead><tbody><tr><td><!-- cell --></td></tr></tbody></table></div>`,
       button: (n) => `<!-- BLOCK:${n} -->\n<button class="btn btn-primary" data-block="${n}"><!-- label --></button>`,
       text: (n) => `<!-- BLOCK:${n} -->\n<p class="text-base-content/80" data-block="${n}"><!-- text --></p>`,
       image: (n) => `<!-- BLOCK:${n} -->\n<img src="" alt="" class="w-full rounded-box" data-block="${n}" />`,
-      spacer: (n) => `<!-- BLOCK:${n} -->\n<div class="h-8" data-block="${n}"></div>`,
+      spacer: (n) => `<!-- BLOCK:${n} -->\n<div class="h-6" data-block="${n}"></div>`,
     };
 
-    let blocks = [];   // { id, type }
-    let seq = 0;
+    let tree = [], seq = 0, dragId = null;
 
-    $('#palette').innerHTML = TYPES.map((t) => '<button class="btn btn-sm justify-start" data-add="' + t.type + '" title="' + t.hint + '">' + t.label + '</button>').join('');
-    $('#palette').addEventListener('click', (e) => { const b = e.target.closest('[data-add]'); if (b) { seq++; blocks.push({ id: b.dataset.add + '-' + seq, type: b.dataset.add }); render(); } });
+    const mk = (type) => { seq++; return { id: type + '-' + seq, type, children: [] }; };
+    function find(id, list = tree, parentId = 'root') {
+      for (let i = 0; i < list.length; i++) {
+        if (list[i].id === id) return { node: list[i], list, index: i, parentId };
+        const r = find(id, list[i].children, list[i].id);
+        if (r) return r;
+      }
+      return null;
+    }
+    function isDescendant(ancestorId, id) { const f = find(ancestorId); if (!f) return false; const walk = (n) => n.id === id || n.children.some(walk); return f.node.children.some(walk); }
 
+    const slot = (parentId, index) => '<div class="drop-slot" data-parent="' + parentId + '" data-index="' + index + '"></div>';
+    function renderList(list, parentId) { return list.map((n, i) => slot(parentId, i) + renderNode(n)).join('') + slot(parentId, list.length); }
+    function renderNode(n) {
+      const isC = CONTAINERS.has(n.type);
+      const body = isC
+        ? '<div class="wf-children" data-zone="' + n.id + '">' + (n.children.length ? renderList(n.children, n.id) : '<div class="wf-empty">drop here</div>' + slot(n.id, 0)) + '</div>'
+        : '<div class="wf-body">' + (PREVIEW[n.type] || '') + '</div>';
+      return '<div class="wf-node" data-id="' + n.id + '">' +
+        '<div class="wf-bar"><span class="wf-handle" draggable="true" data-drag="' + n.id + '" title="Drag to move">⠿</span>' +
+        '<span class="font-mono text-[11px] opacity-60">' + n.id + '</span>' +
+        '<button class="btn btn-xs btn-error ml-auto" data-del="' + n.id + '" title="Remove">✕</button></div>' + body + '</div>';
+    }
     function render() {
       const c = $('#canvas');
-      if (!blocks.length) { c.innerHTML = '<div class="rounded-box border-2 border-dashed border-base-300 p-10 text-center opacity-60">Empty — add blocks from the left</div>'; return; }
-      c.innerHTML = blocks.map((b, i) => {
-        const t = TYPES.find((x) => x.type === b.type);
-        return '<div class="relative rounded-box border border-base-300 bg-base-100 p-3 shadow-sm" data-block="' + b.id + '">' +
-          '<div class="mb-2 flex items-center justify-between"><span class="font-mono text-[11px] opacity-60">' + b.id + ' · ' + (t ? t.hint : '') + '</span>' +
-          '<span class="flex gap-1"><button class="btn btn-xs" data-up="' + i + '" title="Up">↑</button><button class="btn btn-xs" data-down="' + i + '" title="Down">↓</button><button class="btn btn-xs btn-error" data-del="' + i + '" title="Remove">✕</button></span></div>' +
-          PREVIEW[b.type] + '</div>';
-      }).join('');
+      c.innerHTML = tree.length ? renderList(tree, 'root') : '<div class="wf-empty">Empty — add blocks from the left</div>' + slot('root', 0);
     }
-    $('#canvas').addEventListener('click', (e) => {
-      const up = e.target.closest('[data-up]'), dn = e.target.closest('[data-down]'), del = e.target.closest('[data-del]');
-      if (up) { const i = +up.dataset.up; if (i > 0) { [blocks[i - 1], blocks[i]] = [blocks[i], blocks[i - 1]]; render(); } }
-      else if (dn) { const i = +dn.dataset.down; if (i < blocks.length - 1) { [blocks[i + 1], blocks[i]] = [blocks[i], blocks[i + 1]]; render(); } }
-      else if (del) { blocks.splice(+del.dataset.del, 1); render(); }
-    });
-    $('#btnClear').addEventListener('click', () => { blocks = []; render(); });
 
-    const genCode = () => '<!-- Nexus CMS — wireframe sketch. Build this fully responsive. -->\n\n' +
-      (blocks.length ? blocks.map((b) => CODE[b.type](b.id)).join('\n\n') : '<!-- (empty) -->');
+    // palette
+    $('#palette').innerHTML = TYPES.map((t) => '<button class="btn btn-sm justify-start" data-add="' + t.type + '" title="' + t.hint + '">' + t.label + '</button>').join('');
+    $('#palette').addEventListener('click', (e) => { const b = e.target.closest('[data-add]'); if (b) { tree.push(mk(b.dataset.add)); render(); } });
+
+    // remove
+    $('#canvas').addEventListener('click', (e) => { const d = e.target.closest('[data-del]'); if (!d) return; const f = find(d.dataset.del); if (f) { f.list.splice(f.index, 1); render(); } });
+
+    // drag
+    document.addEventListener('dragstart', (e) => { const h = e.target.closest('[data-drag]'); if (!h) return; dragId = h.dataset.drag; e.target.closest('.wf-node')?.classList.add('dragging'); e.dataTransfer.effectAllowed = 'move'; try { e.dataTransfer.setData('text/plain', dragId); } catch {} });
+    document.addEventListener('dragend', () => { dragId = null; document.querySelectorAll('.dragging').forEach((n) => n.classList.remove('dragging')); document.querySelectorAll('.drop-slot.over').forEach((n) => n.classList.remove('over')); });
+    document.addEventListener('dragover', (e) => { const s = e.target.closest('.drop-slot'); if (!s) return; e.preventDefault(); document.querySelectorAll('.drop-slot.over').forEach((n) => n.classList.remove('over')); s.classList.add('over'); });
+    document.addEventListener('dragleave', (e) => { const s = e.target.closest('.drop-slot'); if (s) s.classList.remove('over'); });
+    document.addEventListener('drop', (e) => {
+      const s = e.target.closest('.drop-slot'); if (!s || !dragId) return;
+      e.preventDefault();
+      const parentId = s.dataset.parent, index = +s.dataset.index;
+      if (parentId !== 'root' && (parentId === dragId || isDescendant(dragId, parentId))) { toast('Cannot drop into itself'); return; }
+      const f = find(dragId); if (!f) return;
+      const [node] = f.list.splice(f.index, 1);
+      const target = parentId === 'root' ? tree : (find(parentId)?.node.children || tree);
+      let idx = index;
+      if (f.parentId === parentId && f.index < index) idx = Math.max(0, index - 1);
+      target.splice(Math.min(idx, target.length), 0, node);
+      render();
+    });
+
+    $('#btnClear').addEventListener('click', () => { tree = []; render(); });
+
+    function genList(list, depth) {
+      const pad = '  '.repeat(depth);
+      return list.map((n) => genNode(n, depth)).join('\n');
+    }
+    function genNode(n, depth) {
+      const pad = '  '.repeat(depth);
+      const inner = n.children.length ? genList(n.children, depth + 1) : '';
+      return CODE[n.type](n.id, inner).split('\n').map((l) => l ? pad + l : l).join('\n');
+    }
+    const genCode = () => '<!-- Nexus CMS — wireframe sketch. Build this fully responsive. -->\n\n' + (tree.length ? genList(tree, 0) : '<!-- (empty) -->');
+
     $('#btnCode').addEventListener('click', () => { $('#codeOut').textContent = genCode(); $('#dlgCode').showModal(); });
     $('#btnCopyCode').addEventListener('click', () => navigator.clipboard.writeText(genCode()).then(() => toast('Code copied')));
-    $('#btnPrompt').addEventListener('click', () => {
-      const p = 'Build this dashboard layout fully responsive (mobile → desktop). Use Astro + Tailwind + daisyUI. Keep the data-block names.\n\n' + genCode();
-      navigator.clipboard.writeText(p).then(() => toast('Prompt copied'));
-    });
+    $('#btnPrompt').addEventListener('click', () => navigator.clipboard.writeText('Build this dashboard layout fully responsive (mobile → desktop). Use Astro + Tailwind + daisyUI. Keep the data-block names.\n\n' + genCode()).then(() => toast('Prompt copied')));
     document.addEventListener('click', (e) => { if (e.target.closest('[data-close]')) e.target.closest('dialog').close(); });
 
     render();
