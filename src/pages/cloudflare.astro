@@ -5,14 +5,41 @@ import Panel from '../components/Panel.astro';
 <Base title="Cloudflare — Nexus CMS" active="cloudflare" crumb={['Mission Control', 'Cloudflare']}>
   <h1 class="text-2xl font-bold tracking-tight m-0 mb-1">Cloudflare</h1>
   <p class="opacity-60 text-sm m-0 mb-6">Pages, Workers, D1 and KV for this account.</p>
-  <Panel title="Pages projects" status="disconnected">
-  <div class="state"><strong>Not connected</strong><span>Live Cloudflare data needs an authorized connector. No resources are fabricated here.</span></div>
-  </Panel>
-<Panel title="Workers" status="disconnected">
-  <div class="state"><strong>Not connected</strong><span>Worker list, routes and cron triggers appear when connected.</span></div>
-  </Panel>
-<Panel title="D1 databases & KV" status="disconnected">
-  <div class="state"><strong>Not connected</strong><span>Databases, sizes and namespaces appear when connected.</span></div>
-  </Panel>
 
+  <div id="cf-status" class="alert alert-info mb-6"><span class="text-sm">Loading Cloudflare data…</span></div>
+
+  <Panel title="Pages projects" status="disconnected"><div id="cf-pages" class="state"><strong>Loading…</strong></div></Panel>
+  <Panel title="Workers" status="disconnected"><div id="cf-workers" class="state"><strong>Loading…</strong></div></Panel>
+  <Panel title="D1 databases" status="disconnected"><div id="cf-d1" class="state"><strong>Loading…</strong></div></Panel>
+  <Panel title="KV namespaces" status="disconnected"><div id="cf-kv" class="state"><strong>Loading…</strong></div></Panel>
 </Base>
+
+<script>
+  const esc = (s: string) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c] as string));
+  const setState = (id: string, msg: string) => { const el = document.getElementById(id); if (el) el.innerHTML = `<div class="state"><strong>Not connected</strong><span>${esc(msg)}</span></div>`; };
+  const table = (id: string, cols: string[], rows: string[][]) => {
+    const el = document.getElementById(id); if (!el) return;
+    if (!rows.length) { setState(id, 'No rows returned.'); return; }
+    el.className = 'overflow-x-auto';
+    el.innerHTML = `<table class="table table-sm"><thead><tr>${cols.map((c) => `<th>${esc(c)}</th>`).join('')}</tr></thead><tbody>${rows.map((r) => `<tr>${r.map((c) => `<td>${esc(c)}</td>`).join('')}</tr>`).join('')}</tbody></table>`;
+  };
+  (async () => {
+    try {
+      const r = await fetch('/api/cf', { headers: { 'accept': 'application/json' } });
+      const d = await r.json();
+      const st = document.getElementById('cf-status');
+      if (!d.connected) {
+        if (st) st.outerHTML = `<div class="alert mb-6"><span class="text-sm">Cloudflare: ${esc(d.reason || 'not connected')}</span></div>`;
+        ['cf-pages','cf-workers','cf-d1','cf-kv'].forEach((id) => setState(id, d.reason || 'Not connected'));
+        return;
+      }
+      if (st) st.outerHTML = `<div class="alert mb-6"><span class="text-sm">Connected · account ${esc(d.accountId || '')} · snapshot ${esc(d.generatedAt || 'live')}</span></div>`;
+      table('cf-pages', ['Project', 'Production branch', 'Domain'], (d.pages || []).map((p: any) => [p.name, p.productionBranch || '', p.domain || '']));
+      table('cf-workers', ['Worker', 'Modified'], (d.workers || []).map((w: any) => [w.id, (w.modified || '').slice(0, 19)]));
+      table('cf-d1', ['Database', 'ID', 'Size (KB)'], (d.d1 || []).map((x: any) => [x.name, x.uuid, String(x.sizeKb ?? '')]));
+      table('cf-kv', ['Namespace', 'ID'], (d.kv || []).map((x: any) => [x.title, x.id]));
+    } catch (e) {
+      setState('cf-pages', 'Failed to load: ' + String(e));
+    }
+  })();
+</script>
