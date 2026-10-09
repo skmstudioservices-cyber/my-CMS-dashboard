@@ -11,22 +11,25 @@ const { title = 'Nexus CMS', mode = 'actual' } = Astro.props;
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>{title}</title>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <meta name="robots" content="noindex, nofollow" />
+  <meta name="theme-color" content="#0b1220" />
+  <link rel="manifest" href="/manifest.webmanifest" />
+  <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+  <link rel="icon" href="/icon-192.png" />
 </head>
 <body class="bg-base-100 text-base-content">
   <a href="#view" class="sr-only focus:not-sr-only focus:absolute focus:z-50 focus:p-3 focus:bg-primary focus:text-primary-content">Skip to content</a>
 
   <!-- BLOCK:MODE-BAR -->
   <div class="sticky top-0 z-40 flex flex-wrap items-center gap-3 border-b-2 border-base-300 bg-base-200 px-5 py-3">
-    <span class="badge badge-lg badge-primary font-extrabold">{mode === 'demo' ? '👁️ DEMO DASHBOARD' : '✅ ACTUAL DASHBOARD'}</span>
-    <span class="text-sm opacity-80">{mode === 'demo' ? 'Public sandbox view.' : 'Live view — real data.'}</span>
+    <span class="badge badge-lg badge-primary font-extrabold">⚡ Nexus CMS</span>
+    <span class="text-sm opacity-80">Mission control — live data</span>
     <div class="ml-auto flex flex-wrap items-center gap-2">
       <button class="btn btn-sm" id="btnTheme" aria-label="Switch light or dark theme">🌗 Theme</button>
       <button class="btn btn-sm" data-fs="-1" aria-label="Smaller text">A−</button>
       <button class="btn btn-sm" data-fs="0" aria-label="Reset text">A</button>
       <button class="btn btn-sm" data-fs="1" aria-label="Larger text">A+</button>
       <button class="btn btn-sm" id="btnBlocks" aria-label="Toggle block outlines">🔲 Blocks</button>
-      <a class="btn btn-sm" href="?view=demo" hidden={mode === 'demo'}>Demo</a>
-      <a class="btn btn-sm" href="?view=actual" hidden={mode === 'actual'}>Actual</a>
     </div>
   </div>
 
@@ -275,6 +278,7 @@ const { title = 'Nexus CMS', mode = 'actual' } = Astro.props;
     RENDER.config = async () => { const d = await api('/api/config').catch(() => ({})); $('#view').innerHTML = '<div class="card bg-base-200" data-block="config.settings"><div class="card-body"><h2 class="card-title">⚙️ Config</h2><pre class="text-xs">' + esc(JSON.stringify(d.settings || [], null, 2)) + '</pre></div></div>'; };
 
     $('#btnSync')?.addEventListener('click', () => { toast('Scanning…'); api('/api/sync_resources').then(() => toast('Synced')); });
+    if ('serviceWorker' in navigator) navigator.serviceWorker.register('/sw.js').catch(() => {});
     (() => { const h = location.hash.replace('#', '') || 'overview'; show(TITLES[h] ? h : 'overview'); })();
   </script>
 </body>

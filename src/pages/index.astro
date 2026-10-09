@@ -1,7 +1,6 @@
 ---
-// BLOCK:PAGE-INDEX — the dashboard shell. Sections are rendered by the client
-// engine in Base.astro (each carries a data-block label).
+// BLOCK:PAGE-INDEX — the dashboard shell (PWA, noindex). Sections are rendered
+// by the client engine in Base.astro; each carries a data-block label.
 import Base from '../layouts/Base.astro';
-const view = Astro.url.searchParams.get('view') === 'demo' ? 'demo' : 'actual';
 ---
-<Base mode={view} title="Nexus CMS — Mission Control" />
+<Base title="Nexus CMS — Mission Control" />
