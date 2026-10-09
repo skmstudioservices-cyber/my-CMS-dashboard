@@ -1,0 +1,21 @@
+{
+  "name": "my-cms-dashboard",
+  "type": "module",
+  "version": "2.0.0",
+  "private": true,
+  "scripts": {
+    "blockmap": "node scripts/blockmap.mjs",
+    "dev": "npm run blockmap && astro dev",
+    "build": "npm run blockmap && astro build",
+    "preview": "astro preview"
+  },
+  "dependencies": {
+    "@astrojs/cloudflare": "^12.2.0",
+    "astro": "^5.2.0"
+  },
+  "devDependencies": {
+    "@tailwindcss/vite": "^4.0.0",
+    "daisyui": "^5.0.0",
+    "tailwindcss": "^4.0.0"
+  }
+}

@@ -1,0 +1,72 @@
+{
+  "main.header": {
+    "file": "layouts/Base.astro",
+    "start": 58,
+    "end": 58
+  },
+  "' + id + '": {
+    "file": "layouts/Base.astro",
+    "start": 213,
+    "end": 213
+  },
+  "' + colBlockId + '": {
+    "file": "layouts/Base.astro",
+    "start": 237,
+    "end": 237
+  },
+  "overview.stats": {
+    "file": "layouts/Base.astro",
+    "start": 247,
+    "end": 247
+  },
+  "overview.limit-guard": {
+    "file": "layouts/Base.astro",
+    "start": 249,
+    "end": 249
+  },
+  "overview.recommendations": {
+    "file": "layouts/Base.astro",
+    "start": 250,
+    "end": 250
+  },
+  "sites.table": {
+    "file": "layouts/Base.astro",
+    "start": 255,
+    "end": 255
+  },
+  "comments.list": {
+    "file": "layouts/Base.astro",
+    "start": 260,
+    "end": 260
+  },
+  "d1.explorer": {
+    "file": "layouts/Base.astro",
+    "start": 264,
+    "end": 264
+  },
+  "kv.browser": {
+    "file": "layouts/Base.astro",
+    "start": 265,
+    "end": 265
+  },
+  "crons.list": {
+    "file": "layouts/Base.astro",
+    "start": 266,
+    "end": 266
+  },
+  "github.runs": {
+    "file": "layouts/Base.astro",
+    "start": 267,
+    "end": 267
+  },
+  "domains.checker": {
+    "file": "layouts/Base.astro",
+    "start": 268,
+    "end": 268
+  },
+  "config.settings": {
+    "file": "layouts/Base.astro",
+    "start": 269,
+    "end": 269
+  }
+}

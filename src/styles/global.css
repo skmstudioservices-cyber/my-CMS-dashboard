@@ -1,0 +1,81 @@
+@import "tailwindcss";
+@plugin "daisyui" {
+  themes: skmdark --default, skmlight;
+}
+
+/* ===== BLOCK:THEME-SKMDARK — high-contrast dark (WCAG AAA) ===== */
+@plugin "daisyui/theme" {
+  name: "skmdark";
+  default: true;
+  prefersdark: true;
+  color-scheme: dark;
+  --color-base-100: #0b1220;
+  --color-base-200: #131c2e;
+  --color-base-300: #1e293b;
+  --color-base-content: #f2f6fc;
+  --color-primary: #7dd3fc;
+  --color-primary-content: #04121f;
+  --color-secondary: #a5b4fc;
+  --color-secondary-content: #0b1220;
+  --color-accent: #34d399;
+  --color-accent-content: #04121f;
+  --color-neutral: #1e293b;
+  --color-neutral-content: #e2e8f0;
+  --color-info: #7dd3fc;
+  --color-success: #34d399;
+  --color-warning: #fbbf24;
+  --color-error: #fca5a5;
+  --radius-selector: 0.75rem;
+  --radius-field: 0.7rem;
+  --radius-box: 1rem;
+  --border: 2px;
+}
+
+/* ===== BLOCK:THEME-SKMLIGHT — high-contrast light (WCAG AAA) ===== */
+@plugin "daisyui/theme" {
+  name: "skmlight";
+  default: false;
+  prefersdark: false;
+  color-scheme: light;
+  --color-base-100: #ffffff;
+  --color-base-200: #f4f7fb;
+  --color-base-300: #dbe3ee;
+  --color-base-content: #0a1220;
+  --color-primary: #0b5ed7;
+  --color-primary-content: #ffffff;
+  --color-secondary: #4f46e5;
+  --color-secondary-content: #ffffff;
+  --color-accent: #047857;
+  --color-accent-content: #ffffff;
+  --color-neutral: #e2e8f0;
+  --color-neutral-content: #0a1220;
+  --color-info: #0b5ed7;
+  --color-success: #047857;
+  --color-warning: #a15c00;
+  --color-error: #b91c1c;
+  --radius-selector: 0.75rem;
+  --radius-field: 0.7rem;
+  --radius-box: 1rem;
+  --border: 2px;
+}
+
+/* ===== BLOCK:BASE-TYPE — larger, readable defaults ===== */
+:root { --fs: 17px; }
+html { font-size: var(--fs); scroll-behavior: smooth; }
+body { font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif; line-height: 1.65; }
+:focus-visible { outline: 3px solid var(--color-primary); outline-offset: 2px; border-radius: 6px; }
+
+/* ===== BLOCK:ELEMENT-MARK — outline every block/element when ?blocks=1 ===== */
+[data-block] { position: relative; }
+html.blocks-on [data-block] { outline: 1px dashed color-mix(in oklab, var(--color-primary) 55%, transparent); outline-offset: 3px; }
+html.blocks-on [data-block]::after {
+  content: attr(data-block);
+  position: absolute; top: -0.7rem; left: 0.4rem;
+  font-size: 0.62rem; font-family: ui-monospace, monospace;
+  background: var(--color-primary); color: var(--color-primary-content);
+  padding: 1px 6px; border-radius: 6px; white-space: nowrap; z-index: 5;
+}
+.blk-tools { position: absolute; top: 4px; right: 4px; display: flex; gap: 4px; z-index: 6; opacity: 0; transition: opacity .12s; }
+[data-block]:hover > .blk-tools, [data-block]:focus-within > .blk-tools { opacity: 1; }
+html.blocks-on .blk-tools { opacity: 1; }
+.blk-badge { position: absolute; top: -0.55rem; right: 0.4rem; z-index: 6; }

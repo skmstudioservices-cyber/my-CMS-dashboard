@@ -1,0 +1,275 @@
+---
+// BLOCK:LAYOUT-BASE — html shell + theme + the shared client engine
+// (tabs, comments, colour wheel, copy/send, font size).
+interface Props { title?: string; mode?: 'actual' | 'demo'; }
+const { title = 'Nexus CMS', mode = 'actual' } = Astro.props;
+---
+<!DOCTYPE html>
+<html lang="en" data-theme="skmdark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>{title}</title>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+</head>
+<body class="bg-base-100 text-base-content">
+  <a href="#view" class="sr-only focus:not-sr-only focus:absolute focus:z-50 focus:p-3 focus:bg-primary focus:text-primary-content">Skip to content</a>
+
+  <!-- BLOCK:MODE-BAR -->
+  <div class="sticky top-0 z-40 flex flex-wrap items-center gap-3 border-b-2 border-base-300 bg-base-200 px-5 py-3">
+    <span class="badge badge-lg badge-primary font-extrabold">{mode === 'demo' ? '👁️ DEMO DASHBOARD' : '✅ ACTUAL DASHBOARD'}</span>
+    <span class="text-sm opacity-80">{mode === 'demo' ? 'Public sandbox view.' : 'Live view — real data.'}</span>
+    <div class="ml-auto flex flex-wrap items-center gap-2">
+      <button class="btn btn-sm" id="btnTheme" aria-label="Switch light or dark theme">🌗 Theme</button>
+      <button class="btn btn-sm" data-fs="-1" aria-label="Smaller text">A−</button>
+      <button class="btn btn-sm" data-fs="0" aria-label="Reset text">A</button>
+      <button class="btn btn-sm" data-fs="1" aria-label="Larger text">A+</button>
+      <button class="btn btn-sm" id="btnBlocks" aria-label="Toggle block outlines">🔲 Blocks</button>
+      <a class="btn btn-sm" href="?view=demo" hidden={mode === 'demo'}>Demo</a>
+      <a class="btn btn-sm" href="?view=actual" hidden={mode === 'actual'}>Actual</a>
+    </div>
+  </div>
+
+  <div class="flex min-h-[calc(100vh-3.5rem)]">
+    <!-- BLOCK:SIDEBAR -->
+    <aside id="side" class="sticky top-14 hidden h-[calc(100vh-3.5rem)] w-72 shrink-0 overflow-y-auto border-r-2 border-base-300 bg-base-200 md:block">
+      <div class="px-5 py-5 text-lg font-extrabold">⚡ Nexus <span class="text-primary">CMS</span></div>
+      <ul class="menu w-full gap-1 px-2 pb-10">
+        <li class="menu-title">Core</li>
+        <li><a data-tab="overview" class="nav-item">🏠 Overview</a></li>
+        <li><a data-tab="sites" class="nav-item">🌐 Sites &amp; Stacks</a></li>
+        <li class="menu-title">Data</li>
+        <li><a data-tab="d1" class="nav-item">💾 D1 Databases</a></li>
+        <li><a data-tab="kv" class="nav-item">⚡ KV Namespaces</a></li>
+        <li class="menu-title">Operations</li>
+        <li><a data-tab="crons" class="nav-item">⏰ Crons</a></li>
+        <li><a data-tab="github" class="nav-item">🐙 GitHub Runs</a></li>
+        <li><a data-tab="domains" class="nav-item">🔎 Domain Checker</a></li>
+        <li class="menu-title">Content &amp; AI</li>
+        <li><a data-tab="comments" class="nav-item">💬 Comments</a></li>
+        <li><a href="/vault.html" class="nav-item">🗄️ Vault</a></li>
+        <li class="menu-title">Management</li>
+        <li><a data-tab="config" class="nav-item">⚙️ Config</a></li>
+      </ul>
+    </aside>
+
+    <!-- BLOCK:MAIN -->
+    <main class="min-w-0 flex-1 px-6 py-6">
+      <header class="mb-5 flex flex-wrap items-end justify-between gap-4" data-block="main.header">
+        <div>
+          <h1 class="text-2xl font-extrabold" id="pageTitle">Overview</h1>
+          <p class="text-sm opacity-70" id="pageSub">Mission control for the SKM network</p>
+        </div>
+        <div class="flex flex-wrap gap-2">
+          <a class="btn btn-sm" href="https://github.com/skmstudioservices-cyber/my-CMS-dashboard" target="_blank" rel="noopener">🐙 Repo</a>
+          <button class="btn btn-sm btn-primary" id="btnSync">🔄 Scan Resources</button>
+        </div>
+      </header>
+      <div id="view"><span class="loading loading-spinner"></span></div>
+    </main>
+  </div>
+
+  <!-- BLOCK:DIALOG-COMMENT -->
+  <dialog id="dlgComment" class="modal">
+    <div class="modal-box max-w-2xl">
+      <h3 class="text-lg font-bold">💬 Comment</h3>
+      <p class="mt-1 font-mono text-xs opacity-70">block: <span id="cmBlock"></span> · <span id="cmLines"></span></p>
+      <textarea id="cmText" class="textarea textarea-bordered mt-3 w-full" rows="4" placeholder="What should change?"></textarea>
+      <div class="mt-2 flex flex-wrap gap-2">
+        <button class="btn btn-sm" id="cmVoice">🎤 Voice</button>
+        <span id="cmColorChip" class="hidden items-center gap-2 rounded-lg border-2 border-base-300 px-3 py-1 text-sm">🎨 <span id="cmColorHex"></span></span>
+      </div>
+      <div class="modal-action">
+        <button class="btn btn-ghost" data-close>Cancel</button>
+        <button class="btn" id="cmCopyBtn">📋 Copy prompt</button>
+        <button class="btn btn-primary" id="cmSendBtn">🚀 Send to agent</button>
+      </div>
+    </div>
+  </dialog>
+
+  <!-- BLOCK:DIALOG-COLOR — the colour wheel -->
+  <dialog id="dlgColor" class="modal">
+    <div class="modal-box max-w-xl">
+      <h3 class="text-lg font-bold">🎨 Pick a colour</h3>
+      <p class="mt-1 font-mono text-xs opacity-70">target: <span id="colBlock"></span></p>
+      <div class="mt-3 grid gap-4 sm:grid-cols-2">
+        <div>
+          <input type="color" id="colPick" class="h-40 w-full cursor-pointer rounded-xl border-2 border-base-300" value="#7dd3fc" aria-label="Colour wheel" />
+          <div class="mt-2 flex items-center gap-2">
+            <input id="colHex" class="input input-bordered w-32 font-mono" value="#7dd3fc" aria-label="Hex value" />
+            <button class="btn btn-sm" id="colShades">Shades</button>
+          </div>
+          <div id="colSwatches" class="mt-2 flex flex-wrap gap-2"></div>
+        </div>
+        <div>
+          <div class="rounded-xl border-2 border-base-300 p-4">
+            <div class="text-xs uppercase opacity-60">Live preview</div>
+            <div id="colPreview" class="mt-3 rounded-lg p-4 font-semibold" style="background:#7dd3fc;color:#04121f">Sample text on this colour</div>
+            <div id="colContrast" class="mt-3 text-sm"></div>
+          </div>
+        </div>
+      </div>
+      <div class="modal-action">
+        <button class="btn btn-ghost" data-close>Close</button>
+        <button class="btn" id="colApply">Apply to element</button>
+        <button class="btn btn-primary" id="colToComment">Use in comment</button>
+      </div>
+    </div>
+  </dialog>
+
+  <div id="toast" class="toast toast-end z-50 hidden"><div class="alert alert-info"><span id="toastMsg"></span></div></div>
+
+  <script>
+    // BLOCK:ENGINE-JS — theme, font, tabs, block tools, comments, colour wheel
+    const $ = (s, r = document) => r.querySelector(s);
+    const $$ = (s, r = document) => [...r.querySelectorAll(s)];
+    const api = (p, o) => fetch(p, o).then((r) => (r.headers.get('content-type') || '').includes('json') ? r.json() : r.text());
+    const esc = (s) => String(s ?? '').replace(/[&<>]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c]));
+    const fmt = (n) => Number(n || 0).toLocaleString('en-IN');
+    function toast(m) { const t = $('#toast'); $('#toastMsg').textContent = m; t.classList.remove('hidden'); clearTimeout(t._t); t._t = setTimeout(() => t.classList.add('hidden'), 2600); }
+
+    // ---- theme + font ----
+    const setTheme = (t) => { document.documentElement.setAttribute('data-theme', t); try { localStorage.setItem('nx_theme', t); } catch {} };
+    $('#btnTheme')?.addEventListener('click', () => setTheme(document.documentElement.getAttribute('data-theme') === 'skmdark' ? 'skmlight' : 'skmdark'));
+    const setFs = (px) => { document.documentElement.style.setProperty('--fs', px + 'px'); try { localStorage.setItem('nx_fs', px); } catch {} };
+    $$('[data-fs]').forEach((b) => b.addEventListener('click', () => {
+      const d = +b.dataset.fs;
+      let cur = parseInt(localStorage.getItem('nx_fs') || '17', 10);
+      cur = d === 0 ? 17 : Math.min(24, Math.max(14, cur + d)); setFs(cur); toast('Text ' + cur + 'px');
+    }));
+    $('#btnBlocks')?.addEventListener('click', () => document.documentElement.classList.toggle('blocks-on'));
+    (() => { try { const t = localStorage.getItem('nx_theme'); if (t) setTheme(t); const f = localStorage.getItem('nx_fs'); if (f) setFs(parseInt(f, 10)); } catch {} })();
+
+    // ---- block line-map (block id -> source file + lines) ----
+    let BLOCKMAP = {};
+    fetch('/blockmap.json').then((r) => r.json()).then((m) => { BLOCKMAP = m || {}; }).catch(() => {});
+    const lineInfo = (id) => { const e = BLOCKMAP[id]; return e ? (e.file + ' lines ' + e.start + '–' + e.end) : 'line unknown'; };
+
+    // ---- tabs ----
+    const TITLES = { overview: ['Overview', 'Mission control'], sites: ['Sites & Stacks', 'Detected sites + bindings'], d1: ['D1 Databases', 'Tables + SQL'], kv: ['KV Namespaces', 'Keys'], crons: ['Crons', 'Scheduled jobs'], github: ['GitHub Runs', 'Recent runs'], domains: ['Domain Checker', 'RDAP'], comments: ['Comments', 'Block-level notes'], config: ['Config', 'Settings'] };
+    const RENDER = {};
+    function show(tab) {
+      $$('.nav-item').forEach((a) => a.classList.toggle('active', a.dataset.tab === tab));
+      const t = TITLES[tab] || TITLES.overview;
+      $('#pageTitle').textContent = t[0]; $('#pageSub').textContent = t[1];
+      $('#view').innerHTML = '<span class="loading loading-spinner"></span>';
+      (RENDER[tab] || RENDER.overview)();
+    }
+    $$('.nav-item').forEach((a) => a.addEventListener('click', (e) => { if (!a.dataset.tab) return; e.preventDefault(); show(a.dataset.tab); }));
+
+    // ---- comment dialog ----
+    let cmBlockId = null, cmColor = null;
+    function openComment(id) {
+      cmBlockId = id; cmColor = null;
+      $('#cmBlock').textContent = id; $('#cmLines').textContent = lineInfo(id);
+      $('#cmText').value = ''; $('#cmColorChip').classList.add('hidden');
+      $('#dlgComment').showModal();
+    }
+    document.addEventListener('click', (e) => {
+      const b = e.target.closest('[data-cmt],[data-color],[data-copy],[data-send]');
+      if (!b) return;
+      const id = b.dataset.cmt || b.dataset.color || b.dataset.copy || b.dataset.send;
+      if (b.dataset.cmt) openComment(id);
+      else if (b.dataset.color) openColor(id);
+      else if (b.dataset.copy) buildPrompt(id).then((p) => navigator.clipboard.writeText(p).then(() => toast('Prompt copied')));
+      else if (b.dataset.send) buildPrompt(id).then((p) => sendPrompt(id, p));
+    });
+    const promptFor = (id, note, color) => {
+      const e = BLOCKMAP[id] || {};
+      return 'Block: ' + id + '\nFile: ' + (e.file || 'worker') + ' lines ' + (e.start || '?') + '–' + (e.end || '?') +
+        (color ? '\nColour: use ' + color : '') + '\nNote: ' + (note || '(none)') + '\nTask: revise this block/element and return the updated code.';
+    };
+    async function buildPrompt(id) {
+      const d = await api('/api/comments').catch(() => ({}));
+      const notes = (d.comments || []).filter((c) => c.block_id === id);
+      return promptFor(id, notes.map((n) => n.comment).join(' | '), cmColor);
+    }
+    async function sendPrompt(id, prompt) {
+      try { await api('/api/comments', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ block_id: id, comment: prompt, status: 'queued' }) }); toast('🚀 Queued for the agent'); }
+      catch { toast('Send failed'); }
+    }
+    $('#cmCopyBtn')?.addEventListener('click', async () => {
+      const p = promptFor(cmBlockId, $('#cmText').value, cmColor);
+      await api('/api/comments', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ block_id: cmBlockId, comment: $('#cmText').value, color: cmColor }) }).catch(() => {});
+      navigator.clipboard.writeText(p).then(() => toast('Copied + saved'));
+      $('#dlgComment').close();
+    });
+    $('#cmSendBtn')?.addEventListener('click', async () => {
+      await sendPrompt(cmBlockId, promptFor(cmBlockId, $('#cmText').value, cmColor));
+      $('#dlgComment').close();
+    });
+    $('#cmVoice')?.addEventListener('click', () => {
+      const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+      if (!SR) return toast('Voice not supported');
+      const r = new SR(); r.lang = 'en-IN';
+      r.onresult = (e) => { $('#cmText').value = ($('#cmText').value + ' ' + e.results[0][0].transcript).trim(); };
+      r.start(); toast('Listening…');
+    });
+
+    // ---- colour wheel ----
+    let colBlockId = null;
+    function openColor(id) {
+      colBlockId = id; $('#colBlock').textContent = id;
+      const el = document.querySelector('[data-block="' + id + '"]');
+      const cur = el ? getComputedStyle(el).backgroundColor : '#7dd3fc';
+      setColor(rgbToHex(cur));
+      $('#dlgColor').showModal();
+    }
+    const rgbToHex = (c) => { const m = c.match(/\d+/g) || [125, 211, 252]; return '#' + m.slice(0, 3).map((x) => (+x).toString(16).padStart(2, '0')).join(''); };
+    function setColor(hex) {
+      $('#colPick').value = hex; $('#colHex').value = hex;
+      $('#colPreview').style.background = hex;
+      $('#colPreview').style.color = readableOn(hex);
+      const cr = contrast(hex, '#0b1220');
+      $('#colContrast').innerHTML = 'Contrast vs dark bg: <b>' + cr.toFixed(1) + ':1</b> ' + (cr >= 4.5 ? '✅' : '⚠️');
+      const shades = [0.7, 0.85, 1, 1.15, 1.3].map((f) => shade(hex, f));
+      $('#colSwatches').innerHTML = shades.map((s) => '<button class="h-8 w-8 rounded-lg border-2 border-base-300" style="background:' + s + '" data-sw="' + s + '" aria-label="' + s + '"></button>').join('');
+    }
+    const hex2rgb = (h) => { const n = parseInt(h.slice(1), 16); return [n >> 16 & 255, n >> 8 & 255, n & 255]; };
+    const lum = (h) => { const [r, g, b] = hex2rgb(h).map((v) => { v /= 255; return v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4); }); return 0.2126 * r + 0.7152 * g + 0.0722 * b; };
+    const contrast = (a, b) => { const l1 = lum(a), l2 = lum(b); return (Math.max(l1, l2) + 0.05) / (Math.min(l1, l2) + 0.05); };
+    const readableOn = (h) => (lum(h) > 0.4 ? '#04121f' : '#ffffff');
+    const shade = (h, f) => '#' + hex2rgb(h).map((v) => Math.max(0, Math.min(255, Math.round(f < 1 ? v * f : v + (255 - v) * (f - 1))))).toString(16).padStart(2, '0')).join('');
+    $('#colPick')?.addEventListener('input', (e) => setColor(e.target.value));
+    $('#colHex')?.addEventListener('change', (e) => { if (/^#[0-9a-f]{6}$/i.test(e.target.value)) setColor(e.target.value); });
+    $('#colShades')?.addEventListener('click', () => setColor($('#colHex').value));
+    $('#colSwatches')?.addEventListener('click', (e) => { const s = e.target.closest('[data-sw]'); if (s) setColor(s.dataset.sw); });
+    $('#colApply')?.addEventListener('click', () => { const el = document.querySelector('[data-block="' + colBlockId + '"]'); if (el) el.style.background = $('#colHex').value; toast('Applied'); });
+    $('#colToComment')?.addEventListener('click', () => { cmColor = $('#colHex').value; cmBlockId = colBlockId; $('#cmColorHex').textContent = cmColor; $('#cmColorChip').classList.remove('hidden'); $('#dlgColor').close(); openComment(cmBlockId); $('#cmColorHex').textContent = cmColor; $('#cmColorChip').classList.remove('hidden'); });
+    $$('[data-close]').forEach((b) => b.addEventListener('click', () => b.closest('dialog').close()));
+
+    // ---- data loaders (filled by each tab) ----
+    RENDER.overview = async () => {
+      const d = await api('/api/overview').catch(() => ({}));
+      const lim = d.limits || [];
+      const bar = (x) => { const p = x.percent_used ?? (x.used_today / x.daily_limit * 100); return '<div class="mb-3"><div class="flex justify-between text-sm"><span>' + esc(x.resource_name) + '</span><span class="font-mono opacity-70">' + fmt(x.used_today) + ' / ' + fmt(x.daily_limit) + ' (' + Number(p).toFixed(2) + '%)</span></div><progress class="progress ' + (p > 85 ? 'progress-error' : p > 60 ? 'progress-warning' : 'progress-success') + ' w-full" value="' + Math.min(100, p) + '" max="100"></progress></div>'; };
+      $('#view').innerHTML =
+        '<div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-4" data-block="overview.stats">' +
+        ['Sites:' + fmt(d.total_sites), 'D1:' + fmt(d.d1_count), 'KV:' + fmt(d.kv_count), 'Health:' + esc(d.health_score || '—')].map((t) => '<div class="card bg-base-200"><div class="card-body"><div class="text-xs uppercase opacity-60">' + t.split(':')[0] + '</div><div class="text-3xl font-extrabold">' + t.split(':')[1] + '</div></div></div>').join('') + '</div>' +
+        '<div class="card mt-4 bg-base-200" data-block="overview.limit-guard"><div class="card-body"><h2 class="card-title">🛡️ Limit Guard</h2>' + lim.map(bar).join('') + '</div></div>' +
+        '<div class="card mt-4 bg-base-200" data-block="overview.recommendations"><div class="card-body"><h2 class="card-title">💡 Recommendations</h2><div id="recList">…</div></div></div>';
+      api('/api/recommendations').then((r) => { const recs = r.recommendations || []; $('#recList').innerHTML = recs.length ? recs.map((x) => '<div class="border-b border-base-300 py-2"><b>' + esc(x.site_id || x.type) + '</b> <span class="badge badge-sm">' + esc(x.severity) + '</span><div class="text-sm opacity-80">' + esc(x.message) + '</div></div>').join('') : '<span class="opacity-70">None open.</span>'; });
+    };
+    RENDER.sites = async () => {
+      const d = await api('/api/sites').catch(() => []); const sites = d.sites || d || [];
+      $('#view').innerHTML = '<div class="overflow-x-auto card bg-base-200" data-block="sites.table"><table class="table"><thead><tr><th>Site</th><th>Type</th><th>Stack</th><th>Status</th></tr></thead><tbody>' +
+        sites.map((s) => '<tr><td><b>' + esc(s.name || s.id) + '</b><div class="font-mono text-xs opacity-60">' + esc(s.subdomain || '') + '</div></td><td>' + esc(s.type) + '</td><td>' + (s.stack || []).map((x) => '<span class="badge badge-sm">' + esc(x) + '</span> ').join('') + '</td><td><span class="badge badge-success badge-sm">' + esc(s.status || 'active') + '</span></td></tr>').join('') + '</tbody></table></div>';
+    };
+    RENDER.comments = async () => {
+      const d = await api('/api/comments').catch(() => ({})); const c = d.comments || [];
+      $('#view').innerHTML = '<div class="card bg-base-200" data-block="comments.list"><div class="card-body"><h2 class="card-title">💬 All comments</h2><button class="btn btn-sm btn-primary w-fit" id="cmAll">📋 Copy all as one prompt</button><div class="mt-3">' +
+        (c.length ? c.map((x) => '<div class="border-b border-base-300 py-2"><span class="font-mono text-xs opacity-70">' + esc(x.block_id || 'general') + '</span>' + (x.color ? ' <span class="badge badge-sm">' + esc(x.color) + '</span>' : '') + '<div>' + esc(x.comment) + '</div></div>').join('') : '<span class="opacity-70">No comments yet — hover any block and click 💬.</span>') + '</div></div></div>';
+      $('#cmAll')?.addEventListener('click', () => navigator.clipboard.writeText(c.map((x) => promptFor(x.block_id, x.comment, x.color)).join('\n\n')).then(() => toast('Copied ' + c.length)));
+    };
+    RENDER.d1 = async () => { $('#view').innerHTML = '<div class="card bg-base-200" data-block="d1.explorer"><div class="card-body"><h2 class="card-title">💾 D1</h2><div class="flex gap-2"><select id="dbSel" class="select select-bordered">' + ['CMS_DB','SEO_DB','MAPS_DB','PINCODE_DB','EXAM_DB','EXAM_APAC','SKMTOOLS_DB'].map((x) => '<option>' + x + '</option>').join('') + '</select><button class="btn btn-sm" id="d1Tables">List tables</button></div><div id="d1Out" class="mt-3"></div></div></div>'; $('#d1Tables').addEventListener('click', async () => { const r = await api('/api/d1_tables?db=' + $('#dbSel').value).catch((e) => ({ error: 'fail' })); $('#d1Out').innerHTML = r.error ? '<span class="text-error">' + esc(r.error) + '</span>' : (r.tables || []).map((t) => '<span class="badge badge-lg">' + esc(t) + '</span> ').join(''); }); };
+    RENDER.kv = async () => { $('#view').innerHTML = '<div class="card bg-base-200" data-block="kv.browser"><div class="card-body"><h2 class="card-title">⚡ KV</h2><select id="kvSel" class="select select-bordered">' + ['NEXUS_CACHE','SESSION','MAPS_ADS','MAPS_ADS2'].map((x) => '<option>' + x + '</option>').join('') + '</select><pre id="kvOut" class="mt-3 max-h-96 overflow-auto text-xs">—</pre></div></div>'; };
+    RENDER.crons = async () => { const d = await api('/api/crons').catch(() => ({})); $('#view').innerHTML = '<div class="card bg-base-200" data-block="crons.list"><div class="card-body"><h2 class="card-title">⏰ Crons</h2><table class="table"><thead><tr><th>Job</th><th>Schedule</th></tr></thead><tbody>' + (d.crons || []).map((c) => '<tr><td>' + esc(c.name) + '</td><td class="font-mono">' + esc(c.spec) + '</td></tr>').join('') + '</tbody></table></div></div>'; };
+    RENDER.github = async () => { const d = await api('/api/github_runs').catch(() => ({})); $('#view').innerHTML = '<div class="card bg-base-200" data-block="github.runs"><div class="card-body"><h2 class="card-title">🐙 GitHub Runs</h2>' + (d.error ? '<span class="text-warning">' + esc(d.error) + '</span>' : '<table class="table"><tbody>' + (d.runs || []).map((r) => '<tr><td><a class="link" href="' + esc(r.url) + '">' + esc(r.name) + '</a></td><td>' + esc(r.conclusion || r.status) + '</td></tr>').join('') + '</tbody></table>') + '</div></div>'; };
+    RENDER.domains = async () => { $('#view').innerHTML = '<div class="card bg-base-200" data-block="domains.checker"><div class="card-body"><h2 class="card-title">🔎 Domain Checker</h2><div class="flex gap-2"><input id="domBox" class="input input-bordered" placeholder="example.com"><button class="btn btn-sm btn-primary" id="domGo">Check</button></div><pre id="domOut" class="mt-3 max-h-80 overflow-auto text-xs">—</pre></div></div>'; $('#domGo').addEventListener('click', async () => { $('#domOut').textContent = JSON.stringify(await api('/api/domain_check?domain=' + encodeURIComponent($('#domBox').value)), null, 2); }); };
+    RENDER.config = async () => { const d = await api('/api/config').catch(() => ({})); $('#view').innerHTML = '<div class="card bg-base-200" data-block="config.settings"><div class="card-body"><h2 class="card-title">⚙️ Config</h2><pre class="text-xs">' + esc(JSON.stringify(d.settings || [], null, 2)) + '</pre></div></div>'; };
+
+    $('#btnSync')?.addEventListener('click', () => { toast('Scanning…'); api('/api/sync_resources').then(() => toast('Synced')); });
+    (() => { const h = location.hash.replace('#', '') || 'overview'; show(TITLES[h] ? h : 'overview'); })();
+  </script>
+</body>
+</html>
