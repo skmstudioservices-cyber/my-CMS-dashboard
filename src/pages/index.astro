@@ -162,35 +162,43 @@ import '../styles/global.css';
     // remove
     $('#canvas').addEventListener('click', (e) => { const d = e.target.closest('[data-del]'); if (!d) return; const f = find(d.dataset.del); if (f) { f.list.splice(f.index, 1); render(); } });
 
-    // drag — pointer based (works on touch + desktop, and testable)
+    // drag — mouse + touch, nearest-slot detection (forgiving, testable)
     let overSlot = null;
-    document.addEventListener('pointerdown', (e) => {
-      const h = e.target.closest('[data-drag]');
+    function nearestSlot(x, y) {
+      let best = null, bd = 1e9;
+      document.querySelectorAll('.drop-slot').forEach((sl) => {
+        const r = sl.getBoundingClientRect();
+        const d = Math.abs(y - (r.top + r.height / 2)) + Math.abs(x - (r.left + r.width / 2)) * 0.25;
+        if (d < bd) { bd = d; best = sl; }
+      });
+      return best;
+    }
+    function startDrag(e) {
+      const h = e.target.closest && e.target.closest('[data-drag]');
       if (!h) return;
       e.preventDefault();
       dragId = h.dataset.drag;
       h.closest('.wf-node')?.classList.add('dragging');
       document.body.style.cursor = 'grabbing';
-    });
-    document.addEventListener('pointermove', (e) => {
+    }
+    function moveDrag(x, y) {
       if (!dragId) return;
-      const el = document.elementFromPoint(e.clientX, e.clientY);
-      const s = el && el.closest ? el.closest('.drop-slot') : null;
-      if (s !== overSlot) {
+      const sl = nearestSlot(x, y);
+      if (sl !== overSlot) {
         document.querySelectorAll('.drop-slot.over').forEach((n) => n.classList.remove('over'));
-        overSlot = s;
-        if (s) s.classList.add('over');
+        overSlot = sl;
+        if (sl) sl.classList.add('over');
       }
-    });
-    document.addEventListener('pointerup', () => {
+    }
+    function endDrag() {
       if (!dragId) return;
       const id = dragId; dragId = null;
       document.body.style.cursor = '';
       document.querySelectorAll('.dragging').forEach((n) => n.classList.remove('dragging'));
-      const s = overSlot; overSlot = null;
+      const sl = overSlot; overSlot = null;
       document.querySelectorAll('.drop-slot.over').forEach((n) => n.classList.remove('over'));
-      if (!s) return;
-      const parentId = s.dataset.parent, index = +s.dataset.index;
+      if (!sl) return;
+      const parentId = sl.dataset.parent, index = +sl.dataset.index;
       if (parentId !== 'root' && (parentId === id || isDescendant(id, parentId))) { toast('Cannot drop into itself'); return; }
       const f = find(id); if (!f) return;
       const [node] = f.list.splice(f.index, 1);
@@ -199,7 +207,13 @@ import '../styles/global.css';
       if (f.parentId === parentId && f.index < index) idx = Math.max(0, index - 1);
       target.splice(Math.min(idx, target.length), 0, node);
       render();
-    });
+    }
+    document.addEventListener('mousedown', startDrag);
+    document.addEventListener('mousemove', (e) => moveDrag(e.clientX, e.clientY));
+    document.addEventListener('mouseup', endDrag);
+    document.addEventListener('touchstart', (e) => { const t = e.touches[0]; if (t) startDrag({ target: e.target, preventDefault: () => {} }); }, { passive: true });
+    document.addEventListener('touchmove', (e) => { const t = e.touches[0]; if (t) moveDrag(t.clientX, t.clientY); }, { passive: true });
+    document.addEventListener('touchend', endDrag);
 
     $('#btnClear').addEventListener('click', () => { tree = []; render(); });
 
