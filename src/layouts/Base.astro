@@ -229,7 +229,13 @@ const { title = 'Nexus CMS', mode = 'actual' } = Astro.props;
     const lum = (h) => { const [r, g, b] = hex2rgb(h).map((v) => { v /= 255; return v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4); }); return 0.2126 * r + 0.7152 * g + 0.0722 * b; };
     const contrast = (a, b) => { const l1 = lum(a), l2 = lum(b); return (Math.max(l1, l2) + 0.05) / (Math.min(l1, l2) + 0.05); };
     const readableOn = (h) => (lum(h) > 0.4 ? '#04121f' : '#ffffff');
-    const shade = (h, f) => '#' + hex2rgb(h).map((v) => Math.max(0, Math.min(255, Math.round(f < 1 ? v * f : v + (255 - v) * (f - 1))))).toString(16).padStart(2, '0')).join('');
+    function shade(h, f) {
+      return '#' + hex2rgb(h).map(function (v) {
+        var n = f < 1 ? v * f : v + (255 - v) * (f - 1);
+        n = Math.max(0, Math.min(255, Math.round(n)));
+        return n.toString(16).padStart(2, '0');
+      }).join('');
+    }
     $('#colPick')?.addEventListener('input', (e) => setColor(e.target.value));
     $('#colHex')?.addEventListener('change', (e) => { if (/^#[0-9a-f]{6}$/i.test(e.target.value)) setColor(e.target.value); });
     $('#colShades')?.addEventListener('click', () => setColor($('#colHex').value));
