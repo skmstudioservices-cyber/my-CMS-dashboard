@@ -1,6 +1,8 @@
 ---
 // BLOCK:LAYOUT-BASE — html shell + theme + the shared client engine
 // (tabs, comments, colour wheel, copy/send, font size).
+import '../styles/global.css';
+
 interface Props { title?: string; mode?: 'actual' | 'demo'; }
 const { title = 'Nexus CMS', mode = 'actual' } = Astro.props;
 ---
@@ -262,7 +264,7 @@ const { title = 'Nexus CMS', mode = 'actual' } = Astro.props;
     RENDER.sites = async () => {
       const d = await api('/api/sites').catch(() => []); const sites = d.sites || d || [];
       $('#view').innerHTML = '<div class="overflow-x-auto card bg-base-200" data-block="sites.table"><table class="table"><thead><tr><th>Site</th><th>Type</th><th>Stack</th><th>Status</th></tr></thead><tbody>' +
-        sites.map((s) => '<tr><td><b>' + esc(s.name || s.id) + '</b><div class="font-mono text-xs opacity-60">' + esc(s.subdomain || '') + '</div></td><td>' + esc(s.type) + '</td><td>' + (s.stack || []).map((x) => '<span class="badge badge-sm">' + esc(x) + '</span> ').join('') + '</td><td><span class="badge badge-success badge-sm">' + esc(s.status || 'active') + '</span></td></tr>').join('') + '</tbody></table></div>';
+        sites.map((s) => '<tr><td><b>' + esc(s.name || s.id) + '</b><div class="font-mono text-xs opacity-60">' + esc(s.subdomain || '') + '</div></td><td>' + esc(s.type) + '</td><td>' + (Array.isArray(s.stack) ? s.stack : []).map((x) => '<span class="badge badge-sm">' + esc(x) + '</span> ').join('') + '</td><td><span class="badge badge-success badge-sm">' + esc(s.status || 'active') + '</span></td></tr>').join('') + '</tbody></table></div>';
     };
     RENDER.comments = async () => {
       const d = await api('/api/comments').catch(() => ({})); const c = d.comments || [];

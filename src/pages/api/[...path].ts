@@ -17,7 +17,12 @@ async function getKnownSites(env: any) {
   if (env.CMS_DB) {
     try {
       const r = await env.CMS_DB.prepare('SELECT * FROM cms_sites ORDER BY name').all();
-      if (r.results && r.results.length) return r.results;
+      if (r.results && r.results.length) return r.results.map((s: any) => ({
+        ...s,
+        stack: typeof s.stack === 'string' ? JSON.parse(s.stack) : (s.stack || []),
+        d1_bindings: typeof s.d1_bindings === 'string' ? JSON.parse(s.d1_bindings) : (s.d1_bindings || []),
+        kv_bindings: typeof s.kv_bindings === 'string' ? JSON.parse(s.kv_bindings) : (s.kv_bindings || []),
+      }));
     } catch {}
   }
   return STATIC_SITES;
