@@ -11,7 +11,7 @@
   color-scheme: dark;
   --color-base-100: #0b1220;
   --color-base-200: #131c2e;
-  --color-base-300: #1e293b;
+  --color-base-300: #243146;
   --color-base-content: #f2f6fc;
   --color-primary: #7dd3fc;
   --color-primary-content: #04121f;
@@ -19,7 +19,7 @@
   --color-secondary-content: #0b1220;
   --color-accent: #34d399;
   --color-accent-content: #04121f;
-  --color-neutral: #1e293b;
+  --color-neutral: #243146;
   --color-neutral-content: #e2e8f0;
   --color-info: #7dd3fc;
   --color-success: #34d399;
@@ -39,7 +39,7 @@
   color-scheme: light;
   --color-base-100: #ffffff;
   --color-base-200: #f4f7fb;
-  --color-base-300: #dbe3ee;
+  --color-base-300: #d6dfeb;
   --color-base-content: #0a1220;
   --color-primary: #0b5ed7;
   --color-primary-content: #ffffff;
@@ -61,21 +61,19 @@
 
 /* ===== BLOCK:BASE-TYPE — larger, readable defaults ===== */
 :root { --fs: 17px; }
-html { font-size: var(--fs); scroll-behavior: smooth; }
+html { font-size: var(--fs); }
 body { font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif; line-height: 1.65; }
-:focus-visible { outline: 3px solid var(--color-primary); outline-offset: 2px; border-radius: 6px; }
 
-/* ===== BLOCK:ELEMENT-MARK — outline every block/element when ?blocks=1 ===== */
+/* ===== CUSTOM-ONLY (everything else is daisyUI) =====
+   BLOCK:ELEMENT-MARK — outline every block/element when 🔲 is on */
 [data-block] { position: relative; }
 html.blocks-on [data-block] { outline: 1px dashed color-mix(in oklab, var(--color-primary) 55%, transparent); outline-offset: 3px; }
 html.blocks-on [data-block]::after {
   content: attr(data-block);
-  position: absolute; top: -0.7rem; left: 0.4rem;
-  font-size: 0.62rem; font-family: ui-monospace, monospace;
+  position: absolute; top: -0.72rem; left: 0.35rem;
+  font-size: 0.6rem; font-family: ui-monospace, monospace;
   background: var(--color-primary); color: var(--color-primary-content);
-  padding: 1px 6px; border-radius: 6px; white-space: nowrap; z-index: 5;
+  padding: 1px 6px; border-radius: 6px; white-space: nowrap; z-index: 7;
 }
-.blk-tools { position: absolute; top: 3px; right: 3px; display: flex; gap: 3px; z-index: 6; opacity: .55; transition: opacity .12s; }
-[data-block]:hover > .blk-tools, [data-block]:focus-within > .blk-tools { opacity: 1; }
-html.blocks-on .blk-tools { opacity: 1; }
-.blk-badge { position: absolute; top: -0.55rem; right: 0.4rem; z-index: 6; }
+.blk-tools { position: absolute; top: 2px; right: 2px; display: flex; gap: 2px; z-index: 6; opacity: .5; transition: opacity .12s; }
+[data-block]:hover > .blk-tools, [data-block]:focus-within > .blk-tools, html.blocks-on .blk-tools { opacity: 1; }

@@ -1,10 +1,10 @@
 ---
-// BLOCK:LAYOUT-BASE — html shell + theme + the shared client engine
-// (tabs, comments, colour wheel, copy/send, font size).
+// BLOCK:LAYOUT-BASE — daisyUI-first shell + the only custom JS (block decorator,
+// comments, colour wheel, copy/send). Everything visual is a daisyUI component.
 import '../styles/global.css';
 
-interface Props { title?: string; mode?: 'actual' | 'demo'; }
-const { title = 'Nexus CMS', mode = 'actual' } = Astro.props;
+interface Props { title?: string; }
+const { title = 'Nexus CMS' } = Astro.props;
 ---
 <!DOCTYPE html>
 <html lang="en" data-theme="skmdark">
@@ -22,56 +22,69 @@ const { title = 'Nexus CMS', mode = 'actual' } = Astro.props;
 <body class="bg-base-100 text-base-content">
   <a href="#view" class="sr-only focus:not-sr-only focus:absolute focus:z-50 focus:p-3 focus:bg-primary focus:text-primary-content">Skip to content</a>
 
-  <!-- BLOCK:MODE-BAR -->
-  <div class="sticky top-0 z-40 flex flex-wrap items-center gap-3 border-b-2 border-base-300 bg-base-200 px-5 py-3">
-    <span class="badge badge-lg badge-primary font-extrabold">⚡ Nexus CMS</span>
-    <span class="text-sm opacity-80">Mission control — live data</span>
-    <div class="ml-auto flex flex-wrap items-center gap-2">
-      <button class="btn btn-sm" id="btnTheme" aria-label="Switch light or dark theme">🌗 Theme</button>
-      <button class="btn btn-sm" data-fs="-1" aria-label="Smaller text">A−</button>
-      <button class="btn btn-sm" data-fs="0" aria-label="Reset text">A</button>
-      <button class="btn btn-sm" data-fs="1" aria-label="Larger text">A+</button>
-      <button class="btn btn-sm" id="btnBlocks" aria-label="Toggle block outlines">🔲 Blocks</button>
-    </div>
-  </div>
+  <div class="drawer lg:drawer-open">
+    <input id="nav" type="checkbox" class="drawer-toggle" />
 
-  <div class="flex min-h-[calc(100vh-3.5rem)]">
-    <!-- BLOCK:SIDEBAR -->
-    <aside id="side" class="sticky top-14 hidden h-[calc(100vh-3.5rem)] w-72 shrink-0 overflow-y-auto border-r-2 border-base-300 bg-base-200 md:block">
-      <div class="px-5 py-5 text-lg font-extrabold">⚡ Nexus <span class="text-primary">CMS</span></div>
-      <ul class="menu w-full gap-1 px-2 pb-10">
-        <li class="menu-title">Core</li>
-        <li><a data-tab="overview" class="nav-item">🏠 Overview</a></li>
-        <li><a data-tab="sites" class="nav-item">🌐 Sites &amp; Stacks</a></li>
-        <li class="menu-title">Data</li>
-        <li><a data-tab="d1" class="nav-item">💾 D1 Databases</a></li>
-        <li><a data-tab="kv" class="nav-item">⚡ KV Namespaces</a></li>
-        <li class="menu-title">Operations</li>
-        <li><a data-tab="crons" class="nav-item">⏰ Crons</a></li>
-        <li><a data-tab="github" class="nav-item">🐙 GitHub Runs</a></li>
-        <li><a data-tab="domains" class="nav-item">🔎 Domain Checker</a></li>
-        <li class="menu-title">Content &amp; AI</li>
-        <li><a data-tab="comments" class="nav-item">💬 Comments</a></li>
-        <li><a href="/vault" class="nav-item">🗄️ Vault</a></li>
-        <li class="menu-title">Management</li>
-        <li><a data-tab="config" class="nav-item">⚙️ Config</a></li>
-      </ul>
-    </aside>
-
-    <!-- BLOCK:MAIN -->
-    <main class="min-w-0 flex-1 px-6 py-6">
-      <header class="mb-5 flex flex-wrap items-end justify-between gap-4" data-block="main.header">
-        <div>
-          <h1 class="text-2xl font-extrabold" id="pageTitle">Overview</h1>
-          <p class="text-sm opacity-70" id="pageSub">Mission control for the SKM network</p>
+    <!-- BLOCK:DRAWER-CONTENT -->
+    <div class="drawer-content flex min-h-screen flex-col">
+      <!-- BLOCK:NAVBAR -->
+      <header class="navbar sticky top-0 z-40 border-b-2 border-base-300 bg-base-200">
+        <div class="flex-none lg:hidden">
+          <label for="nav" aria-label="Open menu" class="btn btn-square btn-ghost">☰</label>
         </div>
-        <div class="flex flex-wrap gap-2">
-          <a class="btn btn-sm" href="https://github.com/skmstudioservices-cyber/my-CMS-dashboard" target="_blank" rel="noopener">🐙 Repo</a>
-          <button class="btn btn-sm btn-primary" id="btnSync">🔄 Scan Resources</button>
+        <div class="flex-1 px-2">
+          <span class="text-lg font-extrabold">⚡ Nexus <span class="text-primary">CMS</span></span>
+          <span class="badge badge-primary badge-sm ml-2">live</span>
+        </div>
+        <div class="flex-none gap-2">
+          <div class="join">
+            <button class="btn btn-sm join-item" data-fs="-1" aria-label="Smaller text">A−</button>
+            <button class="btn btn-sm join-item" data-fs="0" aria-label="Reset text">A</button>
+            <button class="btn btn-sm join-item" data-fs="1" aria-label="Larger text">A+</button>
+          </div>
+          <button class="btn btn-sm" id="btnTheme" aria-label="Switch light or dark theme">🌗</button>
+          <button class="btn btn-sm" id="btnBlocks" aria-label="Toggle block outlines">🔲</button>
+          <a class="btn btn-sm btn-ghost" href="https://github.com/skmstudioservices-cyber/my-CMS-dashboard" target="_blank" rel="noopener" aria-label="Repo">🐙</a>
+          <button class="btn btn-sm btn-primary" id="btnSync">🔄 Sync</button>
         </div>
       </header>
-      <div id="view"><span class="loading loading-spinner"></span></div>
-    </main>
+
+      <!-- BLOCK:MAIN -->
+      <main class="flex-1 p-4 lg:p-6">
+        <div class="mb-5 flex flex-wrap items-end justify-between gap-3" data-block="main.header">
+          <div>
+            <h1 class="text-2xl font-extrabold" id="pageTitle">Overview</h1>
+            <p class="text-sm opacity-70" id="pageSub">Mission control for the SKM network</p>
+          </div>
+          <div class="flex flex-wrap gap-2">
+            <button class="btn btn-sm" id="btnCopyAll">📋 Copy all comments as one prompt</button>
+          </div>
+        </div>
+        <div id="view"><span class="loading loading-spinner loading-lg"></span></div>
+      </main>
+    </div>
+
+    <!-- BLOCK:SIDEBAR -->
+    <div class="drawer-side z-50">
+      <label for="nav" aria-label="Close menu" class="drawer-overlay"></label>
+      <ul class="menu min-h-full w-72 gap-1 bg-base-200 p-3 text-base-content">
+        <li class="menu-title">Core</li>
+        <li><a class="nav-item" data-tab="overview">🏠 Overview</a></li>
+        <li><a class="nav-item" data-tab="sites">🌐 Sites &amp; Stacks</a></li>
+        <li class="menu-title">Data</li>
+        <li><a class="nav-item" data-tab="d1">💾 D1 Databases</a></li>
+        <li><a class="nav-item" data-tab="kv">⚡ KV Namespaces</a></li>
+        <li class="menu-title">Operations</li>
+        <li><a class="nav-item" data-tab="crons">⏰ Crons</a></li>
+        <li><a class="nav-item" data-tab="github">🐙 GitHub Runs</a></li>
+        <li><a class="nav-item" data-tab="domains">🔎 Domain Checker</a></li>
+        <li class="menu-title">Content &amp; AI</li>
+        <li><a class="nav-item" data-tab="comments">💬 Comments</a></li>
+        <li><a class="nav-item" href="/vault">🗄️ Vault</a></li>
+        <li class="menu-title">Management</li>
+        <li><a class="nav-item" data-tab="config">⚙️ Config</a></li>
+      </ul>
+    </div>
   </div>
 
   <!-- BLOCK:DIALOG-COMMENT -->
@@ -80,9 +93,9 @@ const { title = 'Nexus CMS', mode = 'actual' } = Astro.props;
       <h3 class="text-lg font-bold">💬 Comment</h3>
       <p class="mt-1 font-mono text-xs opacity-70">block: <span id="cmBlock"></span> · <span id="cmLines"></span></p>
       <textarea id="cmText" class="textarea textarea-bordered mt-3 w-full" rows="4" placeholder="What should change?"></textarea>
-      <div class="mt-2 flex flex-wrap gap-2">
+      <div class="mt-2 flex flex-wrap items-center gap-2">
         <button class="btn btn-sm" id="cmVoice">🎤 Voice</button>
-        <span id="cmColorChip" class="hidden items-center gap-2 rounded-lg border-2 border-base-300 px-3 py-1 text-sm">🎨 <span id="cmColorHex"></span></span>
+        <span id="cmColorChip" class="hidden items-center gap-2"><span class="badge badge-lg">🎨</span><span class="font-mono" id="cmColorHex"></span></span>
       </div>
       <div class="modal-action">
         <button class="btn btn-ghost" data-close>Cancel</button>
@@ -92,14 +105,14 @@ const { title = 'Nexus CMS', mode = 'actual' } = Astro.props;
     </div>
   </dialog>
 
-  <!-- BLOCK:DIALOG-COLOR — the colour wheel -->
+  <!-- BLOCK:DIALOG-COLOR -->
   <dialog id="dlgColor" class="modal">
-    <div class="modal-box max-w-xl">
+    <div class="modal-box max-w-2xl">
       <h3 class="text-lg font-bold">🎨 Pick a colour</h3>
       <p class="mt-1 font-mono text-xs opacity-70">target: <span id="colBlock"></span></p>
       <div class="mt-3 grid gap-4 sm:grid-cols-2">
         <div>
-          <input type="color" id="colPick" class="h-40 w-full cursor-pointer rounded-xl border-2 border-base-300" value="#7dd3fc" aria-label="Colour wheel" />
+          <input type="color" id="colPick" class="h-44 w-full cursor-pointer rounded-box border-2 border-base-300" value="#7dd3fc" aria-label="Colour wheel" />
           <div class="mt-2 flex items-center gap-2">
             <input id="colHex" class="input input-bordered w-32 font-mono" value="#7dd3fc" aria-label="Hex value" />
             <button class="btn btn-sm" id="colShades">Shades</button>
@@ -107,11 +120,11 @@ const { title = 'Nexus CMS', mode = 'actual' } = Astro.props;
           <div id="colSwatches" class="mt-2 flex flex-wrap gap-2"></div>
         </div>
         <div>
-          <div class="rounded-xl border-2 border-base-300 p-4">
+          <div class="card bg-base-200"><div class="card-body">
             <div class="text-xs uppercase opacity-60">Live preview</div>
-            <div id="colPreview" class="mt-3 rounded-lg p-4 font-semibold" style="background:#7dd3fc;color:#04121f">Sample text on this colour</div>
+            <div id="colPreview" class="mt-3 rounded-box p-4 font-semibold" style="background:#7dd3fc;color:#04121f">Sample text on this colour</div>
             <div id="colContrast" class="mt-3 text-sm"></div>
-          </div>
+          </div></div>
         </div>
       </div>
       <div class="modal-action">
@@ -125,27 +138,26 @@ const { title = 'Nexus CMS', mode = 'actual' } = Astro.props;
   <div id="toast" class="toast toast-end z-50 hidden"><div class="alert alert-info"><span id="toastMsg"></span></div></div>
 
   <script>
-    // BLOCK:ENGINE-JS — theme, font, tabs, block tools, comments, colour wheel
+    // ===== BLOCK:ENGINE — the ONLY custom JS (daisyUI handles the visuals) =====
     const $ = (s, r = document) => r.querySelector(s);
     const $$ = (s, r = document) => [...r.querySelectorAll(s)];
     const api = (p, o) => fetch(p, o).then((r) => (r.headers.get('content-type') || '').includes('json') ? r.json() : r.text());
     const esc = (s) => String(s ?? '').replace(/[&<>]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c]));
     const fmt = (n) => Number(n || 0).toLocaleString('en-IN');
-    function toast(m) { const t = $('#toast'); $('#toastMsg').textContent = m; t.classList.remove('hidden'); clearTimeout(t._t); t._t = setTimeout(() => t.classList.add('hidden'), 2600); }
+    function toast(m) { $('#toastMsg').textContent = m; const t = $('#toast'); t.classList.remove('hidden'); clearTimeout(t._t); t._t = setTimeout(() => t.classList.add('hidden'), 2600); }
 
-    // ---- theme + font ----
+    // ---- theme + font + blocks ----
     const setTheme = (t) => { document.documentElement.setAttribute('data-theme', t); try { localStorage.setItem('nx_theme', t); } catch {} };
     $('#btnTheme')?.addEventListener('click', () => setTheme(document.documentElement.getAttribute('data-theme') === 'skmdark' ? 'skmlight' : 'skmdark'));
     const setFs = (px) => { document.documentElement.style.setProperty('--fs', px + 'px'); try { localStorage.setItem('nx_fs', px); } catch {} };
     $$('[data-fs]').forEach((b) => b.addEventListener('click', () => {
-      const d = +b.dataset.fs;
-      let cur = parseInt(localStorage.getItem('nx_fs') || '17', 10);
+      const d = +b.dataset.fs; let cur = parseInt(localStorage.getItem('nx_fs') || '17', 10);
       cur = d === 0 ? 17 : Math.min(24, Math.max(14, cur + d)); setFs(cur); toast('Text ' + cur + 'px');
     }));
     $('#btnBlocks')?.addEventListener('click', () => document.documentElement.classList.toggle('blocks-on'));
     (() => { try { const t = localStorage.getItem('nx_theme'); if (t) setTheme(t); const f = localStorage.getItem('nx_fs'); if (f) setFs(parseInt(f, 10)); } catch {} })();
 
-    // ---- block line-map (block id -> source file + lines) ----
+    // ---- block line-map ----
     let BLOCKMAP = {};
     fetch('/blockmap.json').then((r) => r.json()).then((m) => { BLOCKMAP = m || {}; }).catch(() => {});
     const lineInfo = (id) => { const e = BLOCKMAP[id]; return e ? (e.file + ' lines ' + e.start + '–' + e.end) : 'line unknown'; };
@@ -157,17 +169,56 @@ const { title = 'Nexus CMS', mode = 'actual' } = Astro.props;
       $$('.nav-item').forEach((a) => a.classList.toggle('active', a.dataset.tab === tab));
       const t = TITLES[tab] || TITLES.overview;
       $('#pageTitle').textContent = t[0]; $('#pageSub').textContent = t[1];
-      $('#view').innerHTML = '<span class="loading loading-spinner"></span>';
+      $('#view').innerHTML = '<span class="loading loading-spinner loading-lg"></span>';
       (RENDER[tab] || RENDER.overview)();
     }
     $$('.nav-item').forEach((a) => a.addEventListener('click', (e) => { if (!a.dataset.tab) return; e.preventDefault(); show(a.dataset.tab); }));
 
+    // ---- BLOCK:ELEMENT-DECORATOR ----
+    function isMeaningful(el) {
+      const tag = el.tagName.toLowerCase();
+      if (['script', 'style', 'dialog', 'path', 'html', 'body'].includes(tag)) return false;
+      if (el.classList.contains('blk-tools') || el.classList.contains('skip')) return false;
+      if (['button', 'a', 'img', 'svg', 'input', 'select', 'textarea', 'h1', 'h2', 'h3', 'h4', 'p', 'td', 'th', 'li', 'label', 'code', 'pre', 'span'].includes(tag)) return true;
+      return [...el.childNodes].some((n) => n.nodeType === 3 && n.textContent.trim());
+    }
+    function autoPath(el) {
+      if (el.dataset.block) return el.dataset.block;
+      let p = el.parentElement, base = '';
+      while (p && p !== document.body) { if (p.dataset.block) { base = p.dataset.block; break; } p = p.parentElement; }
+      const tag = el.tagName.toLowerCase();
+      const sibs = p ? [...p.children].filter((c) => c.tagName === el.tagName) : [el];
+      const idx = sibs.indexOf(el) + 1;
+      const role = tag === 'button' ? 'btn' : tag;
+      return (base ? base + '.' : '') + role + idx;
+    }
+    const toolsHTML = (id) =>
+      '<div class="blk-tools">' +
+      '<button class="btn btn-xs btn-primary" data-cmt="' + id + '" title="Comment">💬</button>' +
+      '<button class="btn btn-xs btn-secondary" data-color="' + id + '" title="Colour">🎨</button>' +
+      '<button class="btn btn-xs" data-copy="' + id + '" title="Copy prompt">📋</button>' +
+      '<button class="btn btn-xs btn-accent" data-send="' + id + '" title="Send to agent">🚀</button>' +
+      '</div>';
+    function decorate(root) {
+      if (!root) return;
+      for (const el of [root, ...root.querySelectorAll('*')]) {
+        if (!(el instanceof HTMLElement)) continue;
+        if (el.classList.contains('blk-tools') || el.closest('.blk-tools')) continue;
+        if (!isMeaningful(el)) continue;
+        if (!el.dataset.block) el.dataset.block = autoPath(el);
+        if (!el.querySelector(':scope > .blk-tools')) el.insertAdjacentHTML('afterbegin', toolsHTML(el.dataset.block));
+      }
+    }
+    const _view = $('#view');
+    new MutationObserver(() => { clearTimeout(window._dec); window._dec = setTimeout(() => decorate(_view), 60); }).observe(_view, { childList: true, subtree: true });
+
     // ---- comment dialog ----
     let cmBlockId = null, cmColor = null;
     function openComment(id) {
-      cmBlockId = id; cmColor = null;
+      cmBlockId = id;
       $('#cmBlock').textContent = id; $('#cmLines').textContent = lineInfo(id);
-      $('#cmText').value = ''; $('#cmColorChip').classList.add('hidden');
+      $('#cmText').value = '';
+      if (!cmColor) $('#cmColorChip').classList.add('hidden'); else { $('#cmColorHex').textContent = cmColor; $('#cmColorChip').classList.remove('hidden'); }
       $('#dlgComment').showModal();
     }
     document.addEventListener('click', (e) => {
@@ -181,28 +232,24 @@ const { title = 'Nexus CMS', mode = 'actual' } = Astro.props;
     });
     const promptFor = (id, note, color) => {
       const e = BLOCKMAP[id] || {};
-      return 'Block: ' + id + '\nFile: ' + (e.file || 'worker') + ' lines ' + (e.start || '?') + '–' + (e.end || '?') +
-        (color ? '\nColour: use ' + color : '') + '\nNote: ' + (note || '(none)') + '\nTask: revise this block/element and return the updated code.';
+      return 'Block: ' + id + '\nFile: ' + (e.file || 'src') + ' lines ' + (e.start || '?') + '–' + (e.end || '?') +
+        (color ? '\nColour: use ' + color : '') + '\nNote: ' + (note || '(none)') + '\nTask: revise this element and return the updated code.';
     };
     async function buildPrompt(id) {
       const d = await api('/api/comments').catch(() => ({}));
-      const notes = (d.comments || []).filter((c) => c.block_id === id);
+      const notes = (d.comments || []).filter((c) => c.site_id === id);
       return promptFor(id, notes.map((n) => n.comment).join(' | '), cmColor);
     }
     async function sendPrompt(id, prompt) {
-      try { await api('/api/comments', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ block_id: id, comment: prompt, status: 'queued' }) }); toast('🚀 Queued for the agent'); }
+      try { await api('/api/comments', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ block_id: id, comment: prompt }) }); toast('🚀 Queued for the agent'); }
       catch { toast('Send failed'); }
     }
     $('#cmCopyBtn')?.addEventListener('click', async () => {
-      const p = promptFor(cmBlockId, $('#cmText').value, cmColor);
       await api('/api/comments', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ block_id: cmBlockId, comment: $('#cmText').value, color: cmColor }) }).catch(() => {});
-      navigator.clipboard.writeText(p).then(() => toast('Copied + saved'));
-      $('#dlgComment').close();
+      navigator.clipboard.writeText(promptFor(cmBlockId, $('#cmText').value, cmColor)).then(() => toast('Copied + saved'));
+      cmColor = null; $('#dlgComment').close();
     });
-    $('#cmSendBtn')?.addEventListener('click', async () => {
-      await sendPrompt(cmBlockId, promptFor(cmBlockId, $('#cmText').value, cmColor));
-      $('#dlgComment').close();
-    });
+    $('#cmSendBtn')?.addEventListener('click', async () => { await sendPrompt(cmBlockId, promptFor(cmBlockId, $('#cmText').value, cmColor)); cmColor = null; $('#dlgComment').close(); });
     $('#cmVoice')?.addEventListener('click', () => {
       const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
       if (!SR) return toast('Voice not supported');
@@ -213,23 +260,7 @@ const { title = 'Nexus CMS', mode = 'actual' } = Astro.props;
 
     // ---- colour wheel ----
     let colBlockId = null;
-    function openColor(id) {
-      colBlockId = id; $('#colBlock').textContent = id;
-      const el = document.querySelector('[data-block="' + id + '"]');
-      const cur = el ? getComputedStyle(el).backgroundColor : '#7dd3fc';
-      setColor(rgbToHex(cur));
-      $('#dlgColor').showModal();
-    }
     const rgbToHex = (c) => { const m = c.match(/\d+/g) || [125, 211, 252]; return '#' + m.slice(0, 3).map((x) => (+x).toString(16).padStart(2, '0')).join(''); };
-    function setColor(hex) {
-      $('#colPick').value = hex; $('#colHex').value = hex;
-      $('#colPreview').style.background = hex;
-      $('#colPreview').style.color = readableOn(hex);
-      const cr = contrast(hex, '#0b1220');
-      $('#colContrast').innerHTML = 'Contrast vs dark bg: <b>' + cr.toFixed(1) + ':1</b> ' + (cr >= 4.5 ? '✅' : '⚠️');
-      const shades = [0.7, 0.85, 1, 1.15, 1.3].map((f) => shade(hex, f));
-      $('#colSwatches').innerHTML = shades.map((s) => '<button class="h-8 w-8 rounded-lg border-2 border-base-300" style="background:' + s + '" data-sw="' + s + '" aria-label="' + s + '"></button>').join('');
-    }
     const hex2rgb = (h) => { const n = parseInt(h.slice(1), 16); return [n >> 16 & 255, n >> 8 & 255, n & 255]; };
     const lum = (h) => { const [r, g, b] = hex2rgb(h).map((v) => { v /= 255; return v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4); }); return 0.2126 * r + 0.7152 * g + 0.0722 * b; };
     const contrast = (a, b) => { const l1 = lum(a), l2 = lum(b); return (Math.max(l1, l2) + 0.05) / (Math.min(l1, l2) + 0.05); };
@@ -241,84 +272,71 @@ const { title = 'Nexus CMS', mode = 'actual' } = Astro.props;
         return n.toString(16).padStart(2, '0');
       }).join('');
     }
+    function setColor(hex) {
+      $('#colPick').value = hex; $('#colHex').value = hex;
+      $('#colPreview').style.background = hex; $('#colPreview').style.color = readableOn(hex);
+      const cr = contrast(hex, '#0b1220');
+      $('#colContrast').innerHTML = 'Contrast vs dark bg: <b>' + cr.toFixed(1) + ':1</b> ' + (cr >= 4.5 ? '✅ AA' : '⚠️ low');
+      const shades = [0.7, 0.85, 1, 1.15, 1.3].map((f) => shade(hex, f));
+      $('#colSwatches').innerHTML = shades.map((s) => '<button class="btn btn-xs" style="background:' + s + ';border-color:' + s + '" data-sw="' + s + '" aria-label="' + s + '"></button>').join('');
+    }
+    function openColor(id) {
+      colBlockId = id; $('#colBlock').textContent = id;
+      const el = document.querySelector('[data-block="' + id + '"]');
+      setColor(el ? rgbToHex(getComputedStyle(el).backgroundColor) : '#7dd3fc');
+      $('#dlgColor').showModal();
+    }
     $('#colPick')?.addEventListener('input', (e) => setColor(e.target.value));
     $('#colHex')?.addEventListener('change', (e) => { if (/^#[0-9a-f]{6}$/i.test(e.target.value)) setColor(e.target.value); });
     $('#colShades')?.addEventListener('click', () => setColor($('#colHex').value));
     $('#colSwatches')?.addEventListener('click', (e) => { const s = e.target.closest('[data-sw]'); if (s) setColor(s.dataset.sw); });
     $('#colApply')?.addEventListener('click', () => { const el = document.querySelector('[data-block="' + colBlockId + '"]'); if (el) el.style.background = $('#colHex').value; toast('Applied'); });
-    $('#colToComment')?.addEventListener('click', () => { cmColor = $('#colHex').value; cmBlockId = colBlockId; $('#cmColorHex').textContent = cmColor; $('#cmColorChip').classList.remove('hidden'); $('#dlgColor').close(); openComment(cmBlockId); $('#cmColorHex').textContent = cmColor; $('#cmColorChip').classList.remove('hidden'); });
+    $('#colToComment')?.addEventListener('click', () => { cmColor = $('#colHex').value; cmBlockId = colBlockId; $('#dlgColor').close(); openComment(cmBlockId); });
     $$('[data-close]').forEach((b) => b.addEventListener('click', () => b.closest('dialog').close()));
 
-    // ---- BLOCK:ELEMENT-DECORATOR — label EVERY meaningful element + add its tools ----
-    function isMeaningful(el) {
-      const tag = el.tagName.toLowerCase();
-      if (['script', 'style', 'dialog', 'path'].includes(tag)) return false;
-      if (el.classList.contains('blk-tools') || el.classList.contains('skip')) return false;
-      if (['button', 'a', 'img', 'svg', 'input', 'select', 'textarea', 'h1', 'h2', 'h3', 'h4', 'p', 'td', 'th', 'li', 'label', 'code', 'pre'].includes(tag)) return true;
-      return [...el.childNodes].some((n) => n.nodeType === 3 && n.textContent.trim());
-    }
-    function autoPath(el) {
-      if (el.dataset.block) return el.dataset.block;
-      let p = el.parentElement, base = '';
-      while (p && p !== document.body) { if (p.dataset.block) { base = p.dataset.block; break; } p = p.parentElement; }
-      const tag = el.tagName.toLowerCase();
-      const sibs = p ? [...p.children].filter((c) => c.tagName === el.tagName) : [el];
-      const idx = sibs.indexOf(el) + 1;
-      const role = el.getAttribute('aria-label') ? tag : (tag === 'button' ? 'btn' : tag);
-      return (base ? base + '.' : '') + role + idx;
-    }
-    const toolsHTML = (id) =>
-      '<div class="blk-tools">' +
-      '<button class="btn btn-xs btn-primary" data-cmt="' + id + '" title="Comment" aria-label="Comment on ' + id + '">💬</button>' +
-      '<button class="btn btn-xs btn-secondary" data-color="' + id + '" title="Colour" aria-label="Colour ' + id + '">🎨</button>' +
-      '<button class="btn btn-xs" data-copy="' + id + '" title="Copy prompt" aria-label="Copy ' + id + '">📋</button>' +
-      '<button class="btn btn-xs btn-accent" data-send="' + id + '" title="Send to agent" aria-label="Send ' + id + '">🚀</button>' +
-      '</div>';
-    function decorate(root) {
-      if (!root) return;
-      const els = [root, ...root.querySelectorAll('*')];
-      for (const el of els) {
-        if (!(el instanceof HTMLElement)) continue;
-        if (el.classList.contains('blk-tools') || el.closest('.blk-tools')) continue;
-        if (!isMeaningful(el)) continue;
-        if (!el.dataset.block) el.dataset.block = autoPath(el);
-        if (!el.querySelector(':scope > .blk-tools')) el.insertAdjacentHTML('afterbegin', toolsHTML(el.dataset.block));
-      }
-    }
-    // re-decorate whenever a tab renders
-    const _view = $('#view');
-    new MutationObserver(() => { clearTimeout(window._dec); window._dec = setTimeout(() => decorate(_view), 60); })
-      .observe(_view, { childList: true, subtree: true });
+    // ---- collective copy ----
+    $('#btnCopyAll')?.addEventListener('click', async () => {
+      const d = await api('/api/comments').catch(() => ({}));
+      const c = d.comments || [];
+      if (!c.length) return toast('No comments yet');
+      navigator.clipboard.writeText(c.map((x) => promptFor(x.site_id, x.comment)).join('\n\n')).then(() => toast('Copied ' + c.length + ' comments'));
+    });
 
-    // ---- data loaders (filled by each tab) ----
+    // ===== BLOCK:VIEWS — daisyUI components only =====
     RENDER.overview = async () => {
       const d = await api('/api/overview').catch(() => ({}));
       const lim = d.limits || [];
-      const bar = (x) => { const p = x.percent_used ?? (x.used_today / x.daily_limit * 100); return '<div class="mb-3"><div class="flex justify-between text-sm"><span>' + esc(x.resource_name) + '</span><span class="font-mono opacity-70">' + fmt(x.used_today) + ' / ' + fmt(x.daily_limit) + ' (' + Number(p).toFixed(2) + '%)</span></div><progress class="progress ' + (p > 85 ? 'progress-error' : p > 60 ? 'progress-warning' : 'progress-success') + ' w-full" value="' + Math.min(100, p) + '" max="100"></progress></div>'; };
+      const bar = (x) => { const p = x.percent_used ?? (x.used_today / x.daily_limit * 100); const cls = p > 85 ? 'progress-error' : p > 60 ? 'progress-warning' : 'progress-success'; return '<div class="mb-3" data-block="overview.limit-guard.' + x.resource_name + '"><div class="flex justify-between text-sm"><span>' + esc(x.resource_name) + '</span><span class="font-mono opacity-70">' + fmt(x.used_today) + ' / ' + fmt(x.daily_limit) + ' (' + Number(p).toFixed(2) + '%)</span></div><progress class="progress ' + cls + ' w-full" value="' + Math.min(100, p) + '" max="100"></progress></div>'; };
       $('#view').innerHTML =
-        '<div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-4" data-block="overview.stats">' +
-        ['Sites:' + fmt(d.total_sites), 'D1:' + fmt(d.d1_count), 'KV:' + fmt(d.kv_count), 'Health:' + esc(d.health_score || '—')].map((t) => '<div class="card bg-base-200"><div class="card-body"><div class="text-xs uppercase opacity-60">' + t.split(':')[0] + '</div><div class="text-3xl font-extrabold">' + t.split(':')[1] + '</div></div></div>').join('') + '</div>' +
-        '<div class="card mt-4 bg-base-200" data-block="overview.limit-guard"><div class="card-body"><h2 class="card-title">🛡️ Limit Guard</h2>' + lim.map(bar).join('') + '</div></div>' +
-        '<div class="card mt-4 bg-base-200" data-block="overview.recommendations"><div class="card-body"><h2 class="card-title">💡 Recommendations</h2><div id="recList">…</div></div></div>';
-      api('/api/recommendations').then((r) => { const recs = r.recommendations || []; $('#recList').innerHTML = recs.length ? recs.map((x) => '<div class="border-b border-base-300 py-2"><b>' + esc(x.site_id || x.type) + '</b> <span class="badge badge-sm">' + esc(x.severity) + '</span><div class="text-sm opacity-80">' + esc(x.message) + '</div></div>').join('') : '<span class="opacity-70">None open.</span>'; });
+        '<div class="stats stats-vertical w-full bg-base-200 shadow sm:stats-horizontal" data-block="overview.stats">' +
+        '<div class="stat"><div class="stat-title">Sites</div><div class="stat-value text-primary">' + fmt(d.total_sites) + '</div><div class="stat-desc">tracked</div></div>' +
+        '<div class="stat"><div class="stat-title">D1 Databases</div><div class="stat-value">' + fmt(d.d1_count) + '</div><div class="stat-desc">bound</div></div>' +
+        '<div class="stat"><div class="stat-title">KV Namespaces</div><div class="stat-value">' + fmt(d.kv_count) + '</div><div class="stat-desc">bound</div></div>' +
+        '<div class="stat"><div class="stat-title">Health</div><div class="stat-value text-success">' + esc(d.health_score || '—') + '</div><div class="stat-desc">uptime</div></div>' +
+        '</div>' +
+        '<div class="card mt-4 bg-base-200 shadow" data-block="overview.limit-guard"><div class="card-body"><h2 class="card-title">🛡️ Limit Guard</h2>' + lim.map(bar).join('') + '</div></div>' +
+        '<div class="card mt-4 bg-base-200 shadow" data-block="overview.recommendations"><div class="card-body"><h2 class="card-title">💡 Recommendations</h2><div id="recList" class="flex flex-col gap-2"><span class="loading loading-spinner"></span></div></div></div>';
+      api('/api/recommendations').then((r) => { const recs = r.recommendations || []; $('#recList').innerHTML = recs.length ? recs.map((x) => '<div class="flex items-start justify-between gap-2 border-b border-base-300 pb-2"><div><b>' + esc(x.site_id || x.type) + '</b><div class="text-sm opacity-80">' + esc(x.message) + '</div></div><span class="badge badge-warning badge-sm">' + esc(x.severity) + '</span></div>').join('') : '<span class="opacity-70">None open.</span>'; });
     };
     RENDER.sites = async () => {
       const d = await api('/api/sites').catch(() => []); const sites = d.sites || d || [];
-      $('#view').innerHTML = '<div class="overflow-x-auto card bg-base-200" data-block="sites.table"><table class="table"><thead><tr><th>Site</th><th>Type</th><th>Stack</th><th>Status</th></tr></thead><tbody>' +
-        sites.map((s) => '<tr><td><b>' + esc(s.name || s.id) + '</b><div class="font-mono text-xs opacity-60">' + esc(s.subdomain || '') + '</div></td><td>' + esc(s.type) + '</td><td>' + (Array.isArray(s.stack) ? s.stack : []).map((x) => '<span class="badge badge-sm">' + esc(x) + '</span> ').join('') + '</td><td><span class="badge badge-success badge-sm">' + esc(s.status || 'active') + '</span></td></tr>').join('') + '</tbody></table></div>';
+      $('#view').innerHTML = '<div class="card bg-base-200 shadow" data-block="sites.table"><div class="card-body"><h2 class="card-title">🌐 Sites &amp; Stacks</h2><div class="overflow-x-auto"><table class="table"><thead><tr><th>Site</th><th>Type</th><th>Stack</th><th>Status</th></tr></thead><tbody>' +
+        sites.map((s) => '<tr data-block="sites.table.' + esc(s.id || s.name) + '"><td><b>' + esc(s.name || s.id) + '</b><div class="font-mono text-xs opacity-60">' + esc(s.subdomain || '') + '</div></td><td>' + esc(s.type) + '</td><td>' + (Array.isArray(s.stack) ? s.stack : []).map((x) => '<span class="badge badge-sm badge-outline mr-1">' + esc(x) + '</span>').join('') + '</td><td><span class="badge badge-success badge-sm">' + esc(s.status || 'active') + '</span></td></tr>').join('') + '</tbody></table></div></div></div>';
     };
     RENDER.comments = async () => {
       const d = await api('/api/comments').catch(() => ({})); const c = d.comments || [];
-      $('#view').innerHTML = '<div class="card bg-base-200" data-block="comments.list"><div class="card-body"><h2 class="card-title">💬 All comments</h2><button class="btn btn-sm btn-primary w-fit" id="cmAll">📋 Copy all as one prompt</button><div class="mt-3">' +
-        (c.length ? c.map((x) => '<div class="border-b border-base-300 py-2"><span class="font-mono text-xs opacity-70">' + esc(x.block_id || 'general') + '</span>' + (x.color ? ' <span class="badge badge-sm">' + esc(x.color) + '</span>' : '') + '<div>' + esc(x.comment) + '</div></div>').join('') : '<span class="opacity-70">No comments yet — hover any block and click 💬.</span>') + '</div></div></div>';
-      $('#cmAll')?.addEventListener('click', () => navigator.clipboard.writeText(c.map((x) => promptFor(x.block_id, x.comment, x.color)).join('\n\n')).then(() => toast('Copied ' + c.length)));
+      $('#view').innerHTML = '<div class="card bg-base-200 shadow" data-block="comments.list"><div class="card-body"><h2 class="card-title">💬 All comments <span class="badge badge-sm">' + c.length + '</span></h2>' +
+        (c.length ? '<ul class="flex flex-col gap-2">' + c.map((x) => '<li class="border-b border-base-300 pb-2"><span class="font-mono text-xs opacity-70">' + esc(x.site_id || 'general') + '</span><div>' + esc(x.comment) + '</div></li>').join('') + '</ul>' : '<p class="opacity-70">No comments yet — every element has a 💬 button.</p>') + '</div></div>';
     };
-    RENDER.d1 = async () => { $('#view').innerHTML = '<div class="card bg-base-200" data-block="d1.explorer"><div class="card-body"><h2 class="card-title">💾 D1</h2><div class="flex gap-2"><select id="dbSel" class="select select-bordered">' + ['CMS_DB','SEO_DB','MAPS_DB','PINCODE_DB','EXAM_DB','EXAM_APAC','SKMTOOLS_DB'].map((x) => '<option>' + x + '</option>').join('') + '</select><button class="btn btn-sm" id="d1Tables">List tables</button></div><div id="d1Out" class="mt-3"></div></div></div>'; $('#d1Tables').addEventListener('click', async () => { const r = await api('/api/d1_tables?db=' + $('#dbSel').value).catch((e) => ({ error: 'fail' })); $('#d1Out').innerHTML = r.error ? '<span class="text-error">' + esc(r.error) + '</span>' : (r.tables || []).map((t) => '<span class="badge badge-lg">' + esc(t) + '</span> ').join(''); }); };
-    RENDER.kv = async () => { $('#view').innerHTML = '<div class="card bg-base-200" data-block="kv.browser"><div class="card-body"><h2 class="card-title">⚡ KV</h2><select id="kvSel" class="select select-bordered">' + ['NEXUS_CACHE','SESSION','MAPS_ADS','MAPS_ADS2'].map((x) => '<option>' + x + '</option>').join('') + '</select><pre id="kvOut" class="mt-3 max-h-96 overflow-auto text-xs">—</pre></div></div>'; };
-    RENDER.crons = async () => { const d = await api('/api/crons').catch(() => ({})); $('#view').innerHTML = '<div class="card bg-base-200" data-block="crons.list"><div class="card-body"><h2 class="card-title">⏰ Crons</h2><table class="table"><thead><tr><th>Job</th><th>Schedule</th></tr></thead><tbody>' + (d.crons || []).map((c) => '<tr><td>' + esc(c.name) + '</td><td class="font-mono">' + esc(c.spec) + '</td></tr>').join('') + '</tbody></table></div></div>'; };
-    RENDER.github = async () => { const d = await api('/api/github_runs').catch(() => ({})); $('#view').innerHTML = '<div class="card bg-base-200" data-block="github.runs"><div class="card-body"><h2 class="card-title">🐙 GitHub Runs</h2>' + (d.error ? '<span class="text-warning">' + esc(d.error) + '</span>' : '<table class="table"><tbody>' + (d.runs || []).map((r) => '<tr><td><a class="link" href="' + esc(r.url) + '">' + esc(r.name) + '</a></td><td>' + esc(r.conclusion || r.status) + '</td></tr>').join('') + '</tbody></table>') + '</div></div>'; };
-    RENDER.domains = async () => { $('#view').innerHTML = '<div class="card bg-base-200" data-block="domains.checker"><div class="card-body"><h2 class="card-title">🔎 Domain Checker</h2><div class="flex gap-2"><input id="domBox" class="input input-bordered" placeholder="example.com"><button class="btn btn-sm btn-primary" id="domGo">Check</button></div><pre id="domOut" class="mt-3 max-h-80 overflow-auto text-xs">—</pre></div></div>'; $('#domGo').addEventListener('click', async () => { $('#domOut').textContent = JSON.stringify(await api('/api/domain_check?domain=' + encodeURIComponent($('#domBox').value)), null, 2); }); };
-    RENDER.config = async () => { const d = await api('/api/config').catch(() => ({})); $('#view').innerHTML = '<div class="card bg-base-200" data-block="config.settings"><div class="card-body"><h2 class="card-title">⚙️ Config</h2><pre class="text-xs">' + esc(JSON.stringify(d.settings || [], null, 2)) + '</pre></div></div>'; };
+    RENDER.d1 = async () => {
+      $('#view').innerHTML = '<div class="card bg-base-200 shadow" data-block="d1.explorer"><div class="card-body"><h2 class="card-title">💾 D1 Databases</h2><div class="flex flex-wrap gap-2"><select id="dbSel" class="select select-bordered">' + ['CMS_DB','SEO_DB','MAPS_DB','PINCODE_DB','EXAM_DB','EXAM_APAC','SKMTOOLS_DB'].map((x) => '<option>' + x + '</option>').join('') + '</select><button class="btn btn-sm" id="d1Tables">List tables</button></div><div id="d1Out" class="mt-3 flex flex-wrap gap-2"></div></div></div>';
+      $('#d1Tables').addEventListener('click', async () => { const r = await api('/api/d1_tables?db=' + $('#dbSel').value).catch(() => ({ error: 'failed' })); $('#d1Out').innerHTML = r.error ? '<span class="badge badge-error">' + esc(r.error) + '</span>' : (r.tables || []).map((t) => '<span class="badge badge-outline">' + esc(t) + '</span>').join(''); });
+    };
+    RENDER.kv = async () => { $('#view').innerHTML = '<div class="card bg-base-200 shadow" data-block="kv.browser"><div class="card-body"><h2 class="card-title">⚡ KV Namespaces</h2><select id="kvSel" class="select select-bordered">' + ['NEXUS_CACHE','SESSION','MAPS_ADS','MAPS_ADS2'].map((x) => '<option>' + x + '</option>').join('') + '</select><pre id="kvOut" class="mt-3 max-h-96 overflow-auto text-xs">—</pre></div></div>'; };
+    RENDER.crons = async () => { const d = await api('/api/crons').catch(() => ({})); $('#view').innerHTML = '<div class="card bg-base-200 shadow" data-block="crons.list"><div class="card-body"><h2 class="card-title">⏰ Crons</h2><table class="table"><thead><tr><th>Job</th><th>Schedule</th></tr></thead><tbody>' + (d.crons || []).map((c) => '<tr><td>' + esc(c.name) + '</td><td class="font-mono">' + esc(c.spec) + '</td></tr>').join('') + '</tbody></table></div></div>'; };
+    RENDER.github = async () => { const d = await api('/api/github_runs').catch(() => ({})); $('#view').innerHTML = '<div class="card bg-base-200 shadow" data-block="github.runs"><div class="card-body"><h2 class="card-title">🐙 GitHub Runs</h2>' + (d.error ? '<div class="alert alert-warning">' + esc(d.error) + '</div>' : '<table class="table"><tbody>' + (d.runs || []).map((r) => '<tr><td><a class="link link-primary" href="' + esc(r.url) + '">' + esc(r.name) + '</a></td><td><span class="badge ' + (r.conclusion === 'success' ? 'badge-success' : 'badge-error') + ' badge-sm">' + esc(r.conclusion || r.status) + '</span></td></tr>').join('') + '</tbody></table>') + '</div></div>'; };
+    RENDER.domains = async () => { $('#view').innerHTML = '<div class="card bg-base-200 shadow" data-block="domains.checker"><div class="card-body"><h2 class="card-title">🔎 Domain Checker</h2><div class="join w-full"><input id="domBox" class="input input-bordered join-item" placeholder="example.com"><button class="btn btn-primary join-item" id="domGo">Check</button></div><pre id="domOut" class="mt-3 max-h-80 overflow-auto text-xs">—</pre></div></div>'; $('#domGo').addEventListener('click', async () => { $('#domOut').textContent = JSON.stringify(await api('/api/domain_check?domain=' + encodeURIComponent($('#domBox').value)), null, 2); }); };
+    RENDER.config = async () => { const d = await api('/api/config').catch(() => ({})); $('#view').innerHTML = '<div class="card bg-base-200 shadow" data-block="config.settings"><div class="card-body"><h2 class="card-title">⚙️ Config</h2><pre class="text-xs">' + esc(JSON.stringify(d.settings || [], null, 2)) + '</pre></div></div>'; };
 
     $('#btnSync')?.addEventListener('click', () => { toast('Scanning…'); api('/api/sync_resources').then(() => toast('Synced')); });
     if ('serviceWorker' in navigator) navigator.serviceWorker.register('/sw.js').catch(() => {});
