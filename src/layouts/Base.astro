@@ -249,6 +249,47 @@ const { title = 'Nexus CMS', mode = 'actual' } = Astro.props;
     $('#colToComment')?.addEventListener('click', () => { cmColor = $('#colHex').value; cmBlockId = colBlockId; $('#cmColorHex').textContent = cmColor; $('#cmColorChip').classList.remove('hidden'); $('#dlgColor').close(); openComment(cmBlockId); $('#cmColorHex').textContent = cmColor; $('#cmColorChip').classList.remove('hidden'); });
     $$('[data-close]').forEach((b) => b.addEventListener('click', () => b.closest('dialog').close()));
 
+    // ---- BLOCK:ELEMENT-DECORATOR — label EVERY meaningful element + add its tools ----
+    function isMeaningful(el) {
+      const tag = el.tagName.toLowerCase();
+      if (['script', 'style', 'dialog', 'path'].includes(tag)) return false;
+      if (el.classList.contains('blk-tools') || el.classList.contains('skip')) return false;
+      if (['button', 'a', 'img', 'svg', 'input', 'select', 'textarea', 'h1', 'h2', 'h3', 'h4', 'p', 'td', 'th', 'li', 'label', 'code', 'pre'].includes(tag)) return true;
+      return [...el.childNodes].some((n) => n.nodeType === 3 && n.textContent.trim());
+    }
+    function autoPath(el) {
+      if (el.dataset.block) return el.dataset.block;
+      let p = el.parentElement, base = '';
+      while (p && p !== document.body) { if (p.dataset.block) { base = p.dataset.block; break; } p = p.parentElement; }
+      const tag = el.tagName.toLowerCase();
+      const sibs = p ? [...p.children].filter((c) => c.tagName === el.tagName) : [el];
+      const idx = sibs.indexOf(el) + 1;
+      const role = el.getAttribute('aria-label') ? tag : (tag === 'button' ? 'btn' : tag);
+      return (base ? base + '.' : '') + role + idx;
+    }
+    const toolsHTML = (id) =>
+      '<div class="blk-tools">' +
+      '<button class="btn btn-xs btn-primary" data-cmt="' + id + '" title="Comment" aria-label="Comment on ' + id + '">💬</button>' +
+      '<button class="btn btn-xs btn-secondary" data-color="' + id + '" title="Colour" aria-label="Colour ' + id + '">🎨</button>' +
+      '<button class="btn btn-xs" data-copy="' + id + '" title="Copy prompt" aria-label="Copy ' + id + '">📋</button>' +
+      '<button class="btn btn-xs btn-accent" data-send="' + id + '" title="Send to agent" aria-label="Send ' + id + '">🚀</button>' +
+      '</div>';
+    function decorate(root) {
+      if (!root) return;
+      const els = [root, ...root.querySelectorAll('*')];
+      for (const el of els) {
+        if (!(el instanceof HTMLElement)) continue;
+        if (el.classList.contains('blk-tools') || el.closest('.blk-tools')) continue;
+        if (!isMeaningful(el)) continue;
+        if (!el.dataset.block) el.dataset.block = autoPath(el);
+        if (!el.querySelector(':scope > .blk-tools')) el.insertAdjacentHTML('afterbegin', toolsHTML(el.dataset.block));
+      }
+    }
+    // re-decorate whenever a tab renders
+    const _view = $('#view');
+    new MutationObserver(() => { clearTimeout(window._dec); window._dec = setTimeout(() => decorate(_view), 60); })
+      .observe(_view, { childList: true, subtree: true });
+
     // ---- data loaders (filled by each tab) ----
     RENDER.overview = async () => {
       const d = await api('/api/overview').catch(() => ({}));
@@ -281,7 +322,7 @@ const { title = 'Nexus CMS', mode = 'actual' } = Astro.props;
 
     $('#btnSync')?.addEventListener('click', () => { toast('Scanning…'); api('/api/sync_resources').then(() => toast('Synced')); });
     if ('serviceWorker' in navigator) navigator.serviceWorker.register('/sw.js').catch(() => {});
-    (() => { const h = location.hash.replace('#', '') || 'overview'; show(TITLES[h] ? h : 'overview'); })();
+    (() => { const h = location.hash.replace('#', '') || 'overview'; show(TITLES[h] ? h : 'overview'); decorate(document.body); })();
   </script>
 </body>
 </html>

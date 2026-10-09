@@ -75,7 +75,7 @@ html.blocks-on [data-block]::after {
   background: var(--color-primary); color: var(--color-primary-content);
   padding: 1px 6px; border-radius: 6px; white-space: nowrap; z-index: 5;
 }
-.blk-tools { position: absolute; top: 4px; right: 4px; display: flex; gap: 4px; z-index: 6; opacity: 0; transition: opacity .12s; }
+.blk-tools { position: absolute; top: 3px; right: 3px; display: flex; gap: 3px; z-index: 6; opacity: .55; transition: opacity .12s; }
 [data-block]:hover > .blk-tools, [data-block]:focus-within > .blk-tools { opacity: 1; }
 html.blocks-on .blk-tools { opacity: 1; }
 .blk-badge { position: absolute; top: -0.55rem; right: 0.4rem; z-index: 6; }
