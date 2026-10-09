@@ -1,0 +1,85 @@
+---
+---
+<!-- BLOCK:FEEDBACK — global feedback drawer + copy-as-prompt export -->
+<dialog id="feedbackDialog" class="modal">
+  <div class="modal-box max-w-2xl p-0">
+    <div class="flex items-start justify-between gap-3 p-5 border-b border-base-300">
+      <div>
+        <strong class="text-base">Global feedback</strong>
+        <div class="text-xs opacity-60">Name the tab, section, button, or change in your own words.</div>
+      </div>
+      <button class="btn btn-sm btn-ghost" id="closeFeedback" type="button" aria-label="Close feedback">✕</button>
+    </div>
+    <div class="p-5">
+      <label class="block text-sm font-semibold mb-2" for="feedbackText">Your feedback</label>
+      <textarea id="feedbackText" class="textarea textarea-bordered w-full min-h-28" placeholder="Example: On the Sites & Stacks tab, make the status column easier to scan. Or simply describe what you want changed."></textarea>
+      <div class="flex flex-wrap items-center gap-2 mt-3">
+        <button class="btn btn-sm btn-outline" id="voiceBtn" type="button">🎙 Start voice input</button>
+        <button class="btn btn-sm btn-outline" id="stopVoiceBtn" type="button" disabled>Stop dictation</button>
+        <span class="text-xs opacity-60" id="voiceStatus" role="status">Typing is always available.</span>
+      </div>
+      <button class="btn btn-primary btn-sm mt-4" id="addFeedback" type="button">Add feedback note</button>
+      <div class="flex items-center justify-between mt-6 mb-2">
+        <strong class="text-sm">Collected notes</strong>
+        <span class="text-xs opacity-60" id="noteCount">0 notes</span>
+      </div>
+      <div class="grid gap-2" id="notesList"><div class="text-sm opacity-50 border border-dashed border-base-300 rounded-lg p-4 text-center">Your notes will appear here.</div></div>
+    </div>
+    <div class="flex flex-wrap items-center justify-between gap-3 p-4 border-t border-base-300 bg-base-200">
+      <span class="text-xs opacity-60">Notes are saved in this browser only.</span>
+      <div class="flex gap-2">
+        <button class="btn btn-sm btn-ghost" id="clearFeedback" type="button">Clear all</button>
+        <button class="btn btn-sm btn-primary" id="copyFeedback" type="button">Copy all as prompt</button>
+      </div>
+    </div>
+  </div>
+  <form method="dialog" class="modal-backdrop"><button>close</button></form>
+</dialog>
+<div id="toast" class="fixed bottom-4 right-4 bg-neutral text-neutral-content px-4 py-2.5 rounded-lg text-sm shadow-lg z-50" hidden></div>
+
+<script>
+  const $ = (s: string) => document.querySelector(s) as any;
+  const dialog = $('#feedbackDialog');
+  const input = $('#feedbackText');
+  const list = $('#notesList');
+  const storeKey = 'nexus-phase0-feedback';
+  let notes: any[] = [];
+  try { notes = JSON.parse(localStorage.getItem(storeKey) || '[]'); if (!Array.isArray(notes)) notes = []; } catch { notes = []; }
+  let recognition: any = null, isListening = false, toastTimer: any;
+  function toast(m: string) { const el = $('#toast'); el.textContent = m; el.hidden = false; clearTimeout(toastTimer); toastTimer = setTimeout(() => el.hidden = true, 2600); }
+  function save() { try { localStorage.setItem(storeKey, JSON.stringify(notes)); } catch { toast('Browser storage unavailable. Copy your notes before leaving.'); } render(); }
+  function render() {
+    $('#noteCount').textContent = notes.length + (notes.length === 1 ? ' note' : ' notes');
+    list.replaceChildren();
+    if (!notes.length) { const e = document.createElement('div'); e.className = 'text-sm opacity-50 border border-dashed border-base-300 rounded-lg p-4 text-center'; e.textContent = 'Your notes will appear here.'; list.append(e); return; }
+    notes.forEach((note, i) => {
+      const item = document.createElement('div'); item.className = 'border border-base-300 rounded-lg p-3 flex items-start justify-between gap-3 text-sm';
+      const t = document.createElement('div'); t.textContent = (i + 1) + '. ' + note.text;
+      const r = document.createElement('button'); r.className = 'text-error text-xs shrink-0'; r.textContent = 'Remove'; r.setAttribute('aria-label', 'Remove note ' + (i + 1));
+      r.addEventListener('click', () => { notes.splice(i, 1); save(); });
+      item.append(t, r); list.append(item);
+    });
+  }
+  $('#openFeedback')?.addEventListener('click', () => dialog.showModal());
+  $('#closeFeedback').addEventListener('click', () => dialog.close());
+  $('#addFeedback').addEventListener('click', () => { const text = input.value.trim(); if (!text) { input.focus(); toast('Write or dictate a note first.'); return; } notes.push({ text, createdAt: new Date().toISOString() }); input.value = ''; save(); input.focus(); toast('Feedback note added.'); });
+  $('#clearFeedback').addEventListener('click', () => { if (!notes.length) return; notes = []; save(); toast('All notes cleared.'); });
+  $('#copyFeedback').addEventListener('click', async () => {
+    if (!notes.length) { toast('Add at least one note first.'); return; }
+    const out = ['Please apply the following feedback to the Nexus CMS control center:', '', ...notes.map((n, i) => (i + 1) + '. ' + n.text), '', 'Preserve each note’s wording. Use the named tab, section, button, or control as the target; if a location is unclear, ask only if it blocks implementation.'].join('\n');
+    try { await navigator.clipboard.writeText(out); toast('All feedback copied as one prompt.'); }
+    catch { input.value = out; input.focus(); input.select(); toast('Clipboard blocked; export text is selected to copy manually.'); }
+  });
+  function setVoiceState(m: string, listening = false) { $('#voiceStatus').textContent = m; $('#voiceBtn').disabled = listening; $('#stopVoiceBtn').disabled = !listening; }
+  const SR = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+  if (SR) {
+    recognition = new SR(); recognition.lang = 'en-IN'; recognition.continuous = true; recognition.interimResults = true;
+    recognition.onstart = () => { isListening = true; setVoiceState('Listening… speak your feedback.', true); };
+    recognition.onresult = (e: any) => { let f = ''; for (let i = e.resultIndex; i < e.results.length; i++) if (e.results[i].isFinal) f += e.results[i][0].transcript + ' '; if (f) input.value = (input.value ? input.value.trimEnd() + ' ' : '') + f.trim(); };
+    recognition.onerror = (e: any) => { isListening = false; setVoiceState('Voice input unavailable (' + e.error + '). Type instead.'); };
+    recognition.onend = () => { isListening = false; setVoiceState('Dictation stopped. Review the text, then add the note.'); };
+    $('#voiceBtn').addEventListener('click', () => { try { recognition.start(); } catch { setVoiceState('Could not start voice input. Type instead.'); } });
+    $('#stopVoiceBtn').addEventListener('click', () => recognition.stop());
+  } else { $('#voiceBtn').disabled = true; setVoiceState('Voice recognition not supported here. Typing is available.'); }
+  render();
+</script>
