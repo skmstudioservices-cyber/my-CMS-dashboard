@@ -199,14 +199,25 @@ const { title = 'Nexus CMS' } = Astro.props;
       '<button class="btn btn-xs" data-copy="' + id + '" title="Copy prompt">📋</button>' +
       '<button class="btn btn-xs btn-accent" data-send="' + id + '" title="Send to agent">🚀</button>' +
       '</div>';
+    const INTERACTIVE = new Set(['button', 'a', 'input', 'select', 'textarea', 'label']);
     function decorate(root) {
       if (!root) return;
       for (const el of [root, ...root.querySelectorAll('*')]) {
         if (!(el instanceof HTMLElement)) continue;
         if (el.classList.contains('blk-tools') || el.closest('.blk-tools')) continue;
+        if (el.classList.contains('blk-inline')) continue;
         if (!isMeaningful(el)) continue;
         if (!el.dataset.block) el.dataset.block = autoPath(el);
-        if (!el.querySelector(':scope > .blk-tools')) el.insertAdjacentHTML('afterbegin', toolsHTML(el.dataset.block));
+        const tag = el.tagName.toLowerCase();
+        if (INTERACTIVE.has(tag)) {
+          // never put tools INSIDE an interactive element (it would block clicks) —
+          // add a small 💬 chip right after it instead
+          const nx = el.nextElementSibling;
+          if (!(nx && nx.classList && nx.classList.contains('blk-inline')))
+            el.insertAdjacentHTML('afterend', '<button class="btn btn-xs btn-primary blk-inline" data-cmt="' + el.dataset.block + '" title="Comment">💬</button>');
+        } else {
+          if (!el.querySelector(':scope > .blk-tools')) el.insertAdjacentHTML('afterbegin', toolsHTML(el.dataset.block));
+        }
       }
     }
     const _view = $('#view');
@@ -340,7 +351,7 @@ const { title = 'Nexus CMS' } = Astro.props;
 
     $('#btnSync')?.addEventListener('click', () => { toast('Scanning…'); api('/api/sync_resources').then(() => toast('Synced')); });
     if ('serviceWorker' in navigator) navigator.serviceWorker.register('/sw.js').catch(() => {});
-    (() => { const h = location.hash.replace('#', '') || 'overview'; show(TITLES[h] ? h : 'overview'); decorate(document.body); })();
+    (() => { const h = location.hash.replace('#', '') || 'overview'; show(TITLES[h] ? h : 'overview'); decorate(_view); })();
   </script>
 </body>
 </html>
