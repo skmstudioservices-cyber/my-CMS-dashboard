@@ -1,28 +1,11 @@
 ---
 import '../styles/global.css';
+import Sidebar from '../components/Sidebar.astro';
+import Topbar from '../components/Topbar.astro';
 import Feedback from '../components/Feedback.astro';
 
-interface Props { title?: string; active?: string; }
-const { title = 'Nexus CMS — Control Center', active = 'overview' } = Astro.props;
-
-const groups = [
-  { label: 'Core', items: [
-    { id: 'overview', name: 'Overview', icon: '▦', href: '/' },
-    { id: 'sites', name: 'Sites & Stacks', icon: '◫', href: '#sites' },
-  ]},
-  { label: 'Data', items: [
-    { id: 'databases', name: 'D1 Databases', icon: '▤', href: '#databases' },
-    { id: 'kv', name: 'KV Namespaces', icon: '◇', href: '#kv' },
-  ]},
-  { label: 'Operations', items: [
-    { id: 'crons', name: 'Crons', icon: '◷', href: '#crons' },
-    { id: 'runs', name: 'GitHub Runs', icon: '⌘', href: '#runs' },
-    { id: 'domains', name: 'Domain Checker', icon: '◎', href: '#domains' },
-  ]},
-  { label: 'Workspace', items: [
-    { id: 'config', name: 'Config', icon: '⚙', href: '#config' },
-  ]},
-];
+interface Props { title?: string; active?: string; crumb?: string[]; }
+const { title = 'Nexus CMS — Control Center', active = 'overview', crumb = ['Mission Control', 'Overview'] } = Astro.props;
 ---
 <!doctype html>
 <html lang="en" data-theme="skmlight">
@@ -36,37 +19,9 @@ const groups = [
 </head>
 <body class="bg-base-200 text-base-content antialiased">
   <div class="min-h-screen grid lg:grid-cols-[248px_minmax(0,1fr)]">
-    <!-- BLOCK:SIDEBAR -->
-    <aside data-theme="skmside" class="hidden lg:flex flex-col gap-0.5 p-4 bg-base-100 border-r border-base-300">
-      <div class="px-3 pb-6 text-lg font-extrabold tracking-tight">◈ Nexus CMS</div>
-      {groups.map((g) => (
-        <>
-          <div class="px-3 pt-4 pb-1 text-[11px] uppercase tracking-[0.12em] opacity-60">{g.label}</div>
-          {g.items.map((it) => (
-            <a href={it.href} class:list={[
-              "px-3 py-2.5 rounded-lg text-sm flex items-center gap-2.5 transition-colors",
-              it.id === active ? "bg-primary/15 text-primary font-semibold" : "opacity-75 hover:opacity-100 hover:bg-base-200"
-            ]}>
-              <span class="w-4 text-center">{it.icon}</span>{it.name}
-            </a>
-          ))}
-        </>
-      ))}
-    </aside>
-
+    <Sidebar active={active} />
     <div class="min-w-0 flex flex-col">
-      <!-- BLOCK:TOPBAR -->
-      <header class="sticky top-0 z-20 h-[72px] bg-base-100 border-b border-base-300 flex items-center gap-4 px-4 sm:px-8">
-        <div class="text-xs opacity-60 hidden sm:block">SKM Studio Network / <b class="opacity-100 text-base-content">Mission Control</b></div>
-        <label class="ml-auto hidden md:flex items-center gap-2 bg-base-200 rounded-lg px-3 py-2 w-64">
-          <span class="opacity-50">⌕</span>
-          <input class="bg-transparent outline-none text-sm w-full" placeholder="Search…" />
-        </label>
-        <button id="openFeedback" type="button" class="btn btn-primary btn-sm gap-1">＋ Give feedback</button>
-        <div class="w-9 h-9 rounded-full bg-primary text-primary-content grid place-items-center text-xs font-bold">SK</div>
-      </header>
-
-      <!-- BLOCK:CONTENT -->
+      <Topbar crumb={crumb} />
       <main class="p-4 sm:p-8 w-full max-w-[1200px] mx-auto">
         <slot />
       </main>

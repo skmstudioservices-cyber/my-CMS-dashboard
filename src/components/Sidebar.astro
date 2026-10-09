@@ -1,0 +1,40 @@
+---
+const { active = 'overview' } = Astro.props;
+const groups = [
+  { label: 'Core', items: [
+    { id: 'overview', name: 'Overview', icon: '▦', href: '/' },
+    { id: 'sites', name: 'Site Management', icon: '◫', href: '/sites' },
+  ]},
+  { label: 'Platforms', items: [
+    { id: 'cloudflare', name: 'Cloudflare', icon: '☁', href: '/cloudflare' },
+    { id: 'github', name: 'GitHub', icon: '⌘', href: '/github' },
+    { id: 'notion', name: 'Notion', icon: '▤', href: '/notion' },
+    { id: 'supabase', name: 'Supabase', icon: '◇', href: '/supabase' },
+  ]},
+  { label: 'Growth', items: [
+    { id: 'growth', name: 'Growth & Monetization', icon: '▲', href: '/growth' },
+    { id: 'content', name: 'Content Planner', icon: '✎', href: '/content' },
+  ]},
+  { label: 'Workspace', items: [
+    { id: 'ai', name: 'AI / MCP', icon: '✦', href: '/ai' },
+    { id: 'settings', name: 'Settings', icon: '⚙', href: '/settings' },
+    { id: 'phase-0', name: 'Phase 0 (review)', icon: '◷', href: '/phase-0' },
+  ]},
+];
+---
+<aside data-theme="skmside" class="hidden lg:flex flex-col gap-0.5 p-4 bg-base-100 border-r border-base-300 overflow-y-auto">
+  <div class="px-3 pb-6 text-lg font-extrabold tracking-tight">◈ Nexus CMS</div>
+  {groups.map((g) => (
+    <>
+      <div class="px-3 pt-4 pb-1 text-[11px] uppercase tracking-[0.12em] opacity-60">{g.label}</div>
+      {g.items.map((it) => (
+        <a href={it.href} class:list={[
+          "px-3 py-2.5 rounded-lg text-sm flex items-center gap-2.5 transition-colors",
+          it.id === active ? "bg-primary/15 text-primary font-semibold" : "opacity-75 hover:opacity-100 hover:bg-base-200"
+        ]}>
+          <span class="w-4 text-center">{it.icon}</span>{it.name}
+        </a>
+      ))}
+    </>
+  ))}
+</aside>
