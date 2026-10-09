@@ -1,22 +1,83 @@
 @import "tailwindcss";
 @plugin "daisyui" {
-  /* premium themes enabled so you can try and pick one */
-  themes: business --default, dark --prefersdark, corporate, luxury, nord, dim, abyss, silk, night, winter;
+  themes: skmlight --default, skmside --prefersdark, business, corporate, luxury, nord, dim, abyss, silk, night, winter, dark;
+}
+
+/* ===== BLOCK:THEME-SKMLIGHT — premium light (Vercel/Linear/shadcn look) ===== */
+@plugin "daisyui/theme" {
+  name: "skmlight";
+  default: true;
+  prefersdark: false;
+  color-scheme: light;
+  --color-base-100: #ffffff;      /* cards */
+  --color-base-200: #f7f8fa;      /* page bg */
+  --color-base-300: #e7ebf0;      /* borders */
+  --color-base-content: #0f172a;  /* charcoal text */
+  --color-primary: #2563eb;       /* vibrant blue */
+  --color-primary-content: #ffffff;
+  --color-secondary: #6366f1;
+  --color-secondary-content: #ffffff;
+  --color-accent: #0ea5e9;
+  --color-accent-content: #ffffff;
+  --color-neutral: #1e293b;
+  --color-neutral-content: #f8fafc;
+  --color-info: #2563eb;
+  --color-info-content: #ffffff;
+  --color-success: #16a34a;
+  --color-success-content: #ffffff;
+  --color-warning: #d97706;
+  --color-warning-content: #ffffff;
+  --color-error: #dc2626;
+  --color-error-content: #ffffff;
+  --radius-selector: 0.5rem;
+  --radius-field: 0.5rem;
+  --radius-box: 0.75rem;
+  --border: 1px;
+  --depth: 0;
+  --noise: 0;
+}
+
+/* ===== BLOCK:THEME-SKMSIDE — dark sidebar (nested) ===== */
+@plugin "daisyui/theme" {
+  name: "skmside";
+  default: false;
+  prefersdark: true;
+  color-scheme: dark;
+  --color-base-100: #0f172a;
+  --color-base-200: #131c2e;
+  --color-base-300: #243146;
+  --color-base-content: #e6ebf3;
+  --color-primary: #60a5fa;
+  --color-primary-content: #0b1220;
+  --color-secondary: #a5b4fc;
+  --color-secondary-content: #0b1220;
+  --color-accent: #38bdf8;
+  --color-accent-content: #04121f;
+  --color-neutral: #243146;
+  --color-neutral-content: #e6ebf3;
+  --color-info: #60a5fa;
+  --color-success: #34d399;
+  --color-warning: #fbbf24;
+  --color-error: #fca5a5;
+  --radius-selector: 0.5rem;
+  --radius-field: 0.5rem;
+  --radius-box: 0.75rem;
+  --border: 1px;
+  --depth: 0;
+  --noise: 0;
 }
 
 /* ===== BASE ===== */
-:root { --fs: 16px; }
+:root { --fs: 15px; }
 html { font-size: var(--fs); }
-body { font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif; }
+body { font-family: 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif; }
 
 /* ===== CUSTOM ONLY: block marks + comment chip ===== */
 [data-block] { position: relative; }
-
-/* BLOCK:BLOCK-LEVEL — outlines filtered by level (1 outermost, 2, 3) */
 html[data-blevel="1"] [data-level="1"],
 html[data-blevel="2"] [data-level="1"], html[data-blevel="2"] [data-level="2"],
 html[data-blevel="3"] [data-level="1"], html[data-blevel="3"] [data-level="2"], html[data-blevel="3"] [data-level="3"] {
-  outline: 1px dashed color-mix(in oklab, var(--color-primary) 60%, transparent);
+  outline: 1px dashed color-mix(in oklab, var(--color-primary) 55%, transparent);
   outline-offset: 3px;
 }
 html[data-blevel="1"] [data-level="1"]::after,
@@ -28,9 +89,7 @@ html[data-blevel="3"] [data-level="1"]::after, html[data-blevel="3"] [data-level
   background: var(--color-primary); color: var(--color-primary-content);
   padding: 1px 6px; border-radius: 6px; white-space: nowrap; z-index: 7;
 }
-
-/* BLOCK:COMMENT-CHIP — one 💬 per block (corner) + inline for buttons/links */
-.blk-cmt { position: absolute; top: 2px; right: 2px; z-index: 6; opacity: .45; transition: opacity .12s; }
+.blk-cmt { position: absolute; top: 2px; right: 2px; z-index: 6; opacity: .4; transition: opacity .12s; }
 [data-block]:hover > .blk-cmt, [data-block]:focus-within > .blk-cmt { opacity: 1; }
-.blk-cmt-i { margin-left: 4px; opacity: .5; transition: opacity .12s; vertical-align: middle; }
+.blk-cmt-i { margin-left: 4px; opacity: .45; transition: opacity .12s; vertical-align: middle; }
 .blk-cmt-i:hover, [data-block]:hover > .blk-cmt-i { opacity: 1; }

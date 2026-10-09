@@ -7,19 +7,19 @@ interface Props { title?: string; }
 const { title = 'Nexus CMS' } = Astro.props;
 ---
 <!DOCTYPE html>
-<html lang="en" data-theme="business">
+<html lang="en" data-theme="skmlight">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>{title}</title>
-  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
   <meta name="robots" content="noindex, nofollow" />
   <meta name="theme-color" content="#0b1220" />
   <link rel="manifest" href="/manifest.webmanifest" />
   <link rel="apple-touch-icon" href="/icon.svg" />
   <link rel="icon" href="/icon.svg" type="image/svg+xml" />
 </head>
-<body class="bg-base-100 text-base-content">
+<body class="bg-base-200 text-base-content">
   <a href="#view" class="sr-only focus:not-sr-only focus:absolute focus:z-50 focus:p-3 focus:bg-primary focus:text-primary-content">Skip to content</a>
 
   <div class="drawer lg:drawer-open">
@@ -28,13 +28,21 @@ const { title = 'Nexus CMS' } = Astro.props;
     <!-- BLOCK:DRAWER-CONTENT -->
     <div class="drawer-content flex min-h-screen flex-col">
       <!-- BLOCK:NAVBAR -->
-      <header class="navbar sticky top-0 z-40 gap-2 border-b border-base-300 bg-base-100/95 backdrop-blur">
-        <div class="flex-none lg:hidden"><label for="nav" aria-label="Open menu" class="btn btn-square btn-ghost">☰</label></div>
-        <div class="flex-1 px-1">
-          <span class="text-lg font-bold">⚡ Nexus CMS</span>
+      <header class="navbar sticky top-0 z-40 gap-2 border-b border-base-300 bg-base-100/90 px-3 backdrop-blur">
+        <div class="flex-none lg:hidden"><label for="nav" aria-label="Open menu" class="btn btn-square btn-ghost btn-sm">☰</label></div>
+        <div class="flex-1">
+          <div class="text-sm breadcrumbs hidden sm:block">
+            <ul><li class="opacity-60">Application</li><li class="font-semibold" id="crumb">Dashboard</li></ul>
+          </div>
         </div>
         <div class="flex flex-none flex-wrap items-center gap-2">
-          <select id="themeSel" class="select select-sm select-bordered w-36" aria-label="Theme">
+          <label class="input input-sm input-bordered hidden items-center gap-2 md:flex">
+            <span class="opacity-50">🔎</span>
+            <input id="gsearch" type="search" class="grow" placeholder="Search…" />
+          </label>
+          <select id="themeSel" class="select select-sm select-bordered w-32" aria-label="Theme">
+            <option value="skmlight">skmlight</option>
+            <option value="skmside">skmside</option>
             <option value="business">business</option>
             <option value="corporate">corporate</option>
             <option value="luxury">luxury</option>
@@ -44,7 +52,6 @@ const { title = 'Nexus CMS' } = Astro.props;
             <option value="silk">silk</option>
             <option value="night">night</option>
             <option value="dark">dark</option>
-            <option value="winter">winter</option>
           </select>
           <select id="levelSel" class="select select-sm select-bordered w-28" aria-label="Block outline level">
             <option value="0">blocks off</option>
@@ -52,7 +59,7 @@ const { title = 'Nexus CMS' } = Astro.props;
             <option value="2">L2 inner</option>
             <option value="3">L3 fine</option>
           </select>
-          <button class="btn btn-sm" id="btnColors" aria-label="Colours">🎨 Colours</button>
+          <button class="btn btn-sm" id="btnColors" aria-label="Colours">🎨</button>
           <button class="btn btn-sm btn-primary" id="btnCopyAll">📋 Copy all</button>
           <div class="join">
             <button class="btn btn-sm join-item" data-fs="-1" aria-label="Smaller text">A−</button>
@@ -60,6 +67,9 @@ const { title = 'Nexus CMS' } = Astro.props;
             <button class="btn btn-sm join-item" data-fs="1" aria-label="Larger text">A+</button>
           </div>
           <button class="btn btn-sm btn-ghost" id="btnSync">🔄</button>
+          <div class="avatar placeholder">
+            <div class="w-8 rounded-full bg-primary text-primary-content"><span class="text-xs font-bold">SKM</span></div>
+          </div>
         </div>
       </header>
 
@@ -76,7 +86,7 @@ const { title = 'Nexus CMS' } = Astro.props;
     </div>
 
     <!-- BLOCK:SIDEBAR -->
-    <div class="drawer-side z-50">
+    <div class="drawer-side z-50" data-theme="skmside">
       <label for="nav" aria-label="Close menu" class="drawer-overlay"></label>
       <ul class="menu min-h-full w-72 gap-1 bg-base-200 p-3 text-base-content">
         <li class="menu-title">Core</li>
@@ -264,31 +274,31 @@ const { title = 'Nexus CMS' } = Astro.props;
       const lim = d.limits || [];
       const bar = (x) => { const p = x.percent_used ?? (x.used_today / x.daily_limit * 100); const cls = p > 85 ? 'progress-error' : p > 60 ? 'progress-warning' : 'progress-success'; return '<div class="mb-3" data-block="overview.limit-guard.' + x.resource_name + '"><div class="flex justify-between text-sm"><span>' + esc(x.resource_name) + '</span><span class="font-mono opacity-60">' + fmt(x.used_today) + ' / ' + fmt(x.daily_limit) + ' (' + Number(p).toFixed(2) + '%)</span></div><progress class="progress ' + cls + ' w-full" value="' + Math.min(100, p) + '" max="100"></progress></div>'; };
       $('#view').innerHTML =
-        '<div class="stats stats-vertical w-full bg-base-200 shadow-sm sm:stats-horizontal" data-block="overview.stats">' +
+        '<div class="stats stats-vertical w-full bg-base-100 border border-base-300 shadow-sm sm:stats-horizontal" data-block="overview.stats">' +
         '<div class="stat"><div class="stat-title">Sites</div><div class="stat-value text-primary">' + fmt(d.total_sites) + '</div></div>' +
         '<div class="stat"><div class="stat-title">D1 Databases</div><div class="stat-value">' + fmt(d.d1_count) + '</div></div>' +
         '<div class="stat"><div class="stat-title">KV Namespaces</div><div class="stat-value">' + fmt(d.kv_count) + '</div></div>' +
         '<div class="stat"><div class="stat-title">Health</div><div class="stat-value text-success">' + esc(d.health_score || '—') + '</div></div>' +
         '</div>' +
-        '<div class="card mt-4 bg-base-200 shadow-sm" data-block="overview.limit-guard"><div class="card-body"><h2 class="card-title">🛡️ Limit Guard</h2>' + lim.map(bar).join('') + '</div></div>' +
-        '<div class="card mt-4 bg-base-200 shadow-sm" data-block="overview.recommendations"><div class="card-body"><h2 class="card-title">💡 Recommendations</h2><div id="recList"><span class="loading loading-spinner"></span></div></div></div>';
+        '<div class="card mt-4 bg-base-100 border border-base-300 shadow-sm" data-block="overview.limit-guard"><div class="card-body"><h2 class="card-title">🛡️ Limit Guard</h2>' + lim.map(bar).join('') + '</div></div>' +
+        '<div class="card mt-4 bg-base-100 border border-base-300 shadow-sm" data-block="overview.recommendations"><div class="card-body"><h2 class="card-title">💡 Recommendations</h2><div id="recList"><span class="loading loading-spinner"></span></div></div></div>';
       api('/api/recommendations').then((r) => { const recs = r.recommendations || []; $('#recList').innerHTML = recs.length ? recs.map((x) => '<div class="flex items-start justify-between gap-2 border-b border-base-300 pb-2"><div><b>' + esc(x.site_id || x.type) + '</b><div class="text-sm opacity-70">' + esc(x.message) + '</div></div><span class="badge badge-warning badge-sm">' + esc(x.severity) + '</span></div>').join('') : '<span class="opacity-70">None open.</span>'; });
     };
     RENDER.sites = async () => {
       const d = await api('/api/sites').catch(() => []); const sites = d.sites || d || [];
-      $('#view').innerHTML = '<div class="card bg-base-200 shadow-sm" data-block="sites.table"><div class="card-body"><h2 class="card-title">🌐 Sites &amp; Stacks</h2><div class="overflow-x-auto"><table class="table"><thead><tr><th>Site</th><th>Type</th><th>Stack</th><th>Status</th></tr></thead><tbody>' +
+      $('#view').innerHTML = '<div class="card bg-base-100 border border-base-300 shadow-sm" data-block="sites.table"><div class="card-body"><h2 class="card-title">🌐 Sites &amp; Stacks</h2><div class="overflow-x-auto"><table class="table"><thead><tr><th>Site</th><th>Type</th><th>Stack</th><th>Status</th></tr></thead><tbody>' +
         sites.map((s) => '<tr data-block="sites.table.' + esc(s.id || s.name) + '"><td><b>' + esc(s.name || s.id) + '</b><div class="font-mono text-xs opacity-50">' + esc(s.subdomain || '') + '</div></td><td>' + esc(s.type) + '</td><td>' + (Array.isArray(s.stack) ? s.stack : []).map((x) => '<span class="badge badge-sm badge-outline mr-1">' + esc(x) + '</span>').join('') + '</td><td><span class="badge badge-success badge-sm">' + esc(s.status || 'active') + '</span></td></tr>').join('') + '</tbody></table></div></div></div>';
     };
     RENDER.comments = async () => {
       const d = await api('/api/comments').catch(() => ({})); const c = (d.comments || []).filter((x) => !String(x.comment || '').startsWith('Block: '));
-      $('#view').innerHTML = '<div class="card bg-base-200 shadow-sm" data-block="comments.list"><div class="card-body"><h2 class="card-title">💬 Comments <span class="badge badge-sm">' + c.length + '</span></h2>' + (c.length ? '<ul class="flex flex-col gap-2">' + c.map((x) => '<li class="border-b border-base-300 pb-2"><span class="font-mono text-xs opacity-60">' + esc(x.site_id || 'general') + '</span><div>' + esc(x.comment) + '</div></li>').join('') + '</ul>' : '<p class="opacity-70">No comments yet — every block has a corner 💬.</p>') + '</div></div>';
+      $('#view').innerHTML = '<div class="card bg-base-100 border border-base-300 shadow-sm" data-block="comments.list"><div class="card-body"><h2 class="card-title">💬 Comments <span class="badge badge-sm">' + c.length + '</span></h2>' + (c.length ? '<ul class="flex flex-col gap-2">' + c.map((x) => '<li class="border-b border-base-300 pb-2"><span class="font-mono text-xs opacity-60">' + esc(x.site_id || 'general') + '</span><div>' + esc(x.comment) + '</div></li>').join('') + '</ul>' : '<p class="opacity-70">No comments yet — every block has a corner 💬.</p>') + '</div></div>';
     };
-    RENDER.d1 = async () => { $('#view').innerHTML = '<div class="card bg-base-200 shadow-sm" data-block="d1.explorer"><div class="card-body"><h2 class="card-title">💾 D1 Databases</h2><div class="flex flex-wrap gap-2"><select id="dbSel" class="select select-bordered">' + ['CMS_DB','SEO_DB','MAPS_DB','PINCODE_DB','EXAM_DB','EXAM_APAC','SKMTOOLS_DB'].map((x) => '<option>' + x + '</option>').join('') + '</select><button class="btn btn-sm btn-primary" id="d1Tables">List tables</button></div><div id="d1Out" class="mt-3 flex flex-wrap gap-2"></div></div></div>'; $('#d1Tables').addEventListener('click', async () => { const r = await api('/api/d1_tables?db=' + $('#dbSel').value).catch(() => ({ error: 'failed' })); $('#d1Out').innerHTML = r.error ? '<span class="badge badge-error">' + esc(r.error) + '</span>' : (r.tables || []).map((t) => '<span class="badge badge-outline">' + esc(t) + '</span>').join(''); }); };
-    RENDER.kv = async () => { $('#view').innerHTML = '<div class="card bg-base-200 shadow-sm" data-block="kv.browser"><div class="card-body"><h2 class="card-title">⚡ KV Namespaces</h2><select id="kvSel" class="select select-bordered">' + ['NEXUS_CACHE','SESSION','MAPS_ADS','MAPS_ADS2'].map((x) => '<option>' + x + '</option>').join('') + '</select><pre id="kvOut" class="mt-3 max-h-96 overflow-auto text-xs">—</pre></div></div>'; };
-    RENDER.crons = async () => { const d = await api('/api/crons').catch(() => ({})); $('#view').innerHTML = '<div class="card bg-base-200 shadow-sm" data-block="crons.list"><div class="card-body"><h2 class="card-title">⏰ Crons</h2><table class="table"><thead><tr><th>Job</th><th>Schedule</th></tr></thead><tbody>' + (d.crons || []).map((c) => '<tr><td>' + esc(c.name) + '</td><td class="font-mono">' + esc(c.spec) + '</td></tr>').join('') + '</tbody></table></div></div>'; };
-    RENDER.github = async () => { const d = await api('/api/github_runs').catch(() => ({})); $('#view').innerHTML = '<div class="card bg-base-200 shadow-sm" data-block="github.runs"><div class="card-body"><h2 class="card-title">🐙 GitHub Runs</h2>' + (d.error ? '<div class="alert alert-warning">' + esc(d.error) + '</div>' : '<table class="table"><tbody>' + (d.runs || []).map((r) => '<tr><td><a class="link link-primary" href="' + esc(r.url) + '">' + esc(r.name) + '</a></td><td><span class="badge ' + (r.conclusion === 'success' ? 'badge-success' : 'badge-error') + ' badge-sm">' + esc(r.conclusion || r.status) + '</span></td></tr>').join('') + '</tbody></table>') + '</div></div>'; };
-    RENDER.domains = async () => { $('#view').innerHTML = '<div class="card bg-base-200 shadow-sm" data-block="domains.checker"><div class="card-body"><h2 class="card-title">🔎 Domain Checker</h2><div class="join w-full"><input id="domBox" class="input input-bordered join-item" placeholder="example.com"><button class="btn btn-primary join-item" id="domGo">Check</button></div><pre id="domOut" class="mt-3 max-h-80 overflow-auto text-xs">—</pre></div></div>'; $('#domGo').addEventListener('click', async () => { $('#domOut').textContent = JSON.stringify(await api('/api/domain_check?domain=' + encodeURIComponent($('#domBox').value)), null, 2); }); };
-    RENDER.config = async () => { const d = await api('/api/config').catch(() => ({})); $('#view').innerHTML = '<div class="card bg-base-200 shadow-sm" data-block="config.settings"><div class="card-body"><h2 class="card-title">⚙️ Config</h2><pre class="text-xs">' + esc(JSON.stringify(d.settings || [], null, 2)) + '</pre></div></div>'; };
+    RENDER.d1 = async () => { $('#view').innerHTML = '<div class="card bg-base-100 border border-base-300 shadow-sm" data-block="d1.explorer"><div class="card-body"><h2 class="card-title">💾 D1 Databases</h2><div class="flex flex-wrap gap-2"><select id="dbSel" class="select select-bordered">' + ['CMS_DB','SEO_DB','MAPS_DB','PINCODE_DB','EXAM_DB','EXAM_APAC','SKMTOOLS_DB'].map((x) => '<option>' + x + '</option>').join('') + '</select><button class="btn btn-sm btn-primary" id="d1Tables">List tables</button></div><div id="d1Out" class="mt-3 flex flex-wrap gap-2"></div></div></div>'; $('#d1Tables').addEventListener('click', async () => { const r = await api('/api/d1_tables?db=' + $('#dbSel').value).catch(() => ({ error: 'failed' })); $('#d1Out').innerHTML = r.error ? '<span class="badge badge-error">' + esc(r.error) + '</span>' : (r.tables || []).map((t) => '<span class="badge badge-outline">' + esc(t) + '</span>').join(''); }); };
+    RENDER.kv = async () => { $('#view').innerHTML = '<div class="card bg-base-100 border border-base-300 shadow-sm" data-block="kv.browser"><div class="card-body"><h2 class="card-title">⚡ KV Namespaces</h2><select id="kvSel" class="select select-bordered">' + ['NEXUS_CACHE','SESSION','MAPS_ADS','MAPS_ADS2'].map((x) => '<option>' + x + '</option>').join('') + '</select><pre id="kvOut" class="mt-3 max-h-96 overflow-auto text-xs">—</pre></div></div>'; };
+    RENDER.crons = async () => { const d = await api('/api/crons').catch(() => ({})); $('#view').innerHTML = '<div class="card bg-base-100 border border-base-300 shadow-sm" data-block="crons.list"><div class="card-body"><h2 class="card-title">⏰ Crons</h2><table class="table"><thead><tr><th>Job</th><th>Schedule</th></tr></thead><tbody>' + (d.crons || []).map((c) => '<tr><td>' + esc(c.name) + '</td><td class="font-mono">' + esc(c.spec) + '</td></tr>').join('') + '</tbody></table></div></div>'; };
+    RENDER.github = async () => { const d = await api('/api/github_runs').catch(() => ({})); $('#view').innerHTML = '<div class="card bg-base-100 border border-base-300 shadow-sm" data-block="github.runs"><div class="card-body"><h2 class="card-title">🐙 GitHub Runs</h2>' + (d.error ? '<div class="alert alert-warning">' + esc(d.error) + '</div>' : '<table class="table"><tbody>' + (d.runs || []).map((r) => '<tr><td><a class="link link-primary" href="' + esc(r.url) + '">' + esc(r.name) + '</a></td><td><span class="badge ' + (r.conclusion === 'success' ? 'badge-success' : 'badge-error') + ' badge-sm">' + esc(r.conclusion || r.status) + '</span></td></tr>').join('') + '</tbody></table>') + '</div></div>'; };
+    RENDER.domains = async () => { $('#view').innerHTML = '<div class="card bg-base-100 border border-base-300 shadow-sm" data-block="domains.checker"><div class="card-body"><h2 class="card-title">🔎 Domain Checker</h2><div class="join w-full"><input id="domBox" class="input input-bordered join-item" placeholder="example.com"><button class="btn btn-primary join-item" id="domGo">Check</button></div><pre id="domOut" class="mt-3 max-h-80 overflow-auto text-xs">—</pre></div></div>'; $('#domGo').addEventListener('click', async () => { $('#domOut').textContent = JSON.stringify(await api('/api/domain_check?domain=' + encodeURIComponent($('#domBox').value)), null, 2); }); };
+    RENDER.config = async () => { const d = await api('/api/config').catch(() => ({})); $('#view').innerHTML = '<div class="card bg-base-100 border border-base-300 shadow-sm" data-block="config.settings"><div class="card-body"><h2 class="card-title">⚙️ Config</h2><pre class="text-xs">' + esc(JSON.stringify(d.settings || [], null, 2)) + '</pre></div></div>'; };
 
     $('#btnSync')?.addEventListener('click', () => { toast('Scanning…'); api('/api/sync_resources').then(() => toast('Synced')); });
     loadColors();
