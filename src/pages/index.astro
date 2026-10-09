@@ -146,7 +146,7 @@ import '../styles/global.css';
         ? '<div class="wf-children" data-zone="' + n.id + '">' + (n.children.length ? renderList(n.children, n.id) : '<div class="wf-empty">drop here</div>' + slot(n.id, 0)) + '</div>'
         : '<div class="wf-body">' + (PREVIEW[n.type] || '') + '</div>';
       return '<div class="wf-node" data-id="' + n.id + '">' +
-        '<div class="wf-bar"><span class="wf-handle" draggable="true" data-drag="' + n.id + '" title="Drag to move">⠿</span>' +
+        '<div class="wf-bar"><span class="wf-handle" data-drag="' + n.id + '" title="Drag to move">⠿</span>' +
         '<span class="font-mono text-[11px] opacity-60">' + n.id + '</span>' +
         '<button class="btn btn-xs btn-error ml-auto" data-del="' + n.id + '" title="Remove">✕</button></div>' + body + '</div>';
     }
@@ -162,17 +162,37 @@ import '../styles/global.css';
     // remove
     $('#canvas').addEventListener('click', (e) => { const d = e.target.closest('[data-del]'); if (!d) return; const f = find(d.dataset.del); if (f) { f.list.splice(f.index, 1); render(); } });
 
-    // drag
-    document.addEventListener('dragstart', (e) => { const h = e.target.closest('[data-drag]'); if (!h) return; dragId = h.dataset.drag; e.target.closest('.wf-node')?.classList.add('dragging'); e.dataTransfer.effectAllowed = 'move'; try { e.dataTransfer.setData('text/plain', dragId); } catch {} });
-    document.addEventListener('dragend', () => { dragId = null; document.querySelectorAll('.dragging').forEach((n) => n.classList.remove('dragging')); document.querySelectorAll('.drop-slot.over').forEach((n) => n.classList.remove('over')); });
-    document.addEventListener('dragover', (e) => { const s = e.target.closest('.drop-slot'); if (!s) return; e.preventDefault(); document.querySelectorAll('.drop-slot.over').forEach((n) => n.classList.remove('over')); s.classList.add('over'); });
-    document.addEventListener('dragleave', (e) => { const s = e.target.closest('.drop-slot'); if (s) s.classList.remove('over'); });
-    document.addEventListener('drop', (e) => {
-      const s = e.target.closest('.drop-slot'); if (!s || !dragId) return;
+    // drag — pointer based (works on touch + desktop, and testable)
+    let overSlot = null;
+    document.addEventListener('pointerdown', (e) => {
+      const h = e.target.closest('[data-drag]');
+      if (!h) return;
       e.preventDefault();
+      dragId = h.dataset.drag;
+      h.closest('.wf-node')?.classList.add('dragging');
+      document.body.style.cursor = 'grabbing';
+    });
+    document.addEventListener('pointermove', (e) => {
+      if (!dragId) return;
+      const el = document.elementFromPoint(e.clientX, e.clientY);
+      const s = el && el.closest ? el.closest('.drop-slot') : null;
+      if (s !== overSlot) {
+        document.querySelectorAll('.drop-slot.over').forEach((n) => n.classList.remove('over'));
+        overSlot = s;
+        if (s) s.classList.add('over');
+      }
+    });
+    document.addEventListener('pointerup', () => {
+      if (!dragId) return;
+      const id = dragId; dragId = null;
+      document.body.style.cursor = '';
+      document.querySelectorAll('.dragging').forEach((n) => n.classList.remove('dragging'));
+      const s = overSlot; overSlot = null;
+      document.querySelectorAll('.drop-slot.over').forEach((n) => n.classList.remove('over'));
+      if (!s) return;
       const parentId = s.dataset.parent, index = +s.dataset.index;
-      if (parentId !== 'root' && (parentId === dragId || isDescendant(dragId, parentId))) { toast('Cannot drop into itself'); return; }
-      const f = find(dragId); if (!f) return;
+      if (parentId !== 'root' && (parentId === id || isDescendant(id, parentId))) { toast('Cannot drop into itself'); return; }
+      const f = find(id); if (!f) return;
       const [node] = f.list.splice(f.index, 1);
       const target = parentId === 'root' ? tree : (find(parentId)?.node.children || tree);
       let idx = index;
