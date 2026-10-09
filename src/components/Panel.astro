@@ -1,0 +1,16 @@
+---
+interface Props { title: string; subtitle?: string; status?: 'connected' | 'disconnected' | 'planned'; }
+const { title, subtitle = '', status = 'disconnected' } = Astro.props;
+const map = { connected: ['badge-success', 'Connected'], planned: ['badge-ghost', 'Planned'], disconnected: ['badge-ghost', 'Not connected'] } as const;
+const b = map[status];
+---
+<section class="card mb-6">
+  <div class="card-body">
+    <div class="flex items-center justify-between gap-3">
+      <h2 class="text-base font-semibold m-0">{title}</h2>
+      <span class:list={["badge badge-sm", b[0]]}>{b[1]}</span>
+    </div>
+    {subtitle && <p class="text-xs opacity-60 mt-1 mb-3">{subtitle}</p>}
+    <slot />
+  </div>
+</section>

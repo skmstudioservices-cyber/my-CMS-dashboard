@@ -1,0 +1,18 @@
+---
+import Base from '../layouts/Base.astro';
+import Panel from '../components/Panel.astro';
+---
+<Base title="Settings — Nexus CMS" active="settings" crumb={['Mission Control', 'Settings']}>
+  <h1 class="text-2xl font-bold tracking-tight m-0 mb-1">Settings</h1>
+  <p class="opacity-60 text-sm m-0 mb-6">Preferences, PWA and build info.</p>
+  <Panel title="Application" status="connected">
+    <table class="table table-sm"><tbody><tr><td class="opacity-60">Framework</td><td>Astro 5 + Tailwind 4</td></tr><tr><td class="opacity-60">Deploy</td><td>Bridge → Worker + Pages</td></tr><tr><td class="opacity-60">Route</td><td>/ and /phase-0/</td></tr></tbody></table>
+  </Panel>
+<Panel title="PWA / install" status="connected">
+    <p class="text-sm opacity-70 m-0">Manifest and service worker are served from the site root. Install from the browser menu.</p>
+  </Panel>
+<Panel title="Authentication" status="planned">
+  <div class="state"><strong>Not connected</strong><span>Auth must be designed before sensitive account data or privileged actions are exposed.</span></div>
+  </Panel>
+
+</Base>

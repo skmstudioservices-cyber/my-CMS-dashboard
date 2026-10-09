@@ -1,0 +1,12 @@
+---
+import Base from '../layouts/Base.astro';
+import Panel from '../components/Panel.astro';
+---
+<Base title="Supabase — Nexus CMS" active="supabase" crumb={['Mission Control', 'Supabase']}>
+  <h1 class="text-2xl font-bold tracking-tight m-0 mb-1">Supabase</h1>
+  <p class="opacity-60 text-sm m-0 mb-6">Projects and resources.</p>
+  <Panel title="Projects" status="disconnected">
+  <div class="state"><strong>Not connected</strong><span>Project and database details appear only when the connection and permissions exist.</span></div>
+  </Panel>
+
+</Base>

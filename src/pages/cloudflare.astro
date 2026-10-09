@@ -1,0 +1,18 @@
+---
+import Base from '../layouts/Base.astro';
+import Panel from '../components/Panel.astro';
+---
+<Base title="Cloudflare — Nexus CMS" active="cloudflare" crumb={['Mission Control', 'Cloudflare']}>
+  <h1 class="text-2xl font-bold tracking-tight m-0 mb-1">Cloudflare</h1>
+  <p class="opacity-60 text-sm m-0 mb-6">Pages, Workers, D1 and KV for this account.</p>
+  <Panel title="Pages projects" status="disconnected">
+  <div class="state"><strong>Not connected</strong><span>Live Cloudflare data needs an authorized connector. No resources are fabricated here.</span></div>
+  </Panel>
+<Panel title="Workers" status="disconnected">
+  <div class="state"><strong>Not connected</strong><span>Worker list, routes and cron triggers appear when connected.</span></div>
+  </Panel>
+<Panel title="D1 databases & KV" status="disconnected">
+  <div class="state"><strong>Not connected</strong><span>Databases, sizes and namespaces appear when connected.</span></div>
+  </Panel>
+
+</Base>

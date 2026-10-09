@@ -1,0 +1,12 @@
+---
+import Base from '../layouts/Base.astro';
+import Panel from '../components/Panel.astro';
+---
+<Base title="Notion — Nexus CMS" active="notion" crumb={['Mission Control', 'Notion']}>
+  <h1 class="text-2xl font-bold tracking-tight m-0 mb-1">Notion</h1>
+  <p class="opacity-60 text-sm m-0 mb-6">Workspace resources, docs and plans.</p>
+  <Panel title="Workspace" status="disconnected">
+  <div class="state"><strong>Not connected</strong><span>Only pages this integration can access will be shown.</span></div>
+  </Panel>
+
+</Base>

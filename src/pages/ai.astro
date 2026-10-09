@@ -1,0 +1,12 @@
+---
+import Base from '../layouts/Base.astro';
+import Panel from '../components/Panel.astro';
+---
+<Base title="AI / MCP Integrations — Nexus CMS" active="ai" crumb={['Mission Control', 'AI / MCP Integrations']}>
+  <h1 class="text-2xl font-bold tracking-tight m-0 mb-1">AI / MCP Integrations</h1>
+  <p class="opacity-60 text-sm m-0 mb-6">Available AI services and MCP tools.</p>
+  <Panel title="Integration inventory" status="disconnected">
+  <div class="state"><strong>Not connected</strong><span>Connected, disconnected, unavailable and planned tools will be listed here. Secrets are never exposed client-side.</span></div>
+  </Panel>
+
+</Base>

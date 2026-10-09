@@ -1,0 +1,12 @@
+---
+import Base from '../layouts/Base.astro';
+import Panel from '../components/Panel.astro';
+---
+<Base title="Content Planner — Nexus CMS" active="content" crumb={['Mission Control', 'Content Planner']}>
+  <h1 class="text-2xl font-bold tracking-tight m-0 mb-1">Content Planner</h1>
+  <p class="opacity-60 text-sm m-0 mb-6">Ideas, drafts, status and scheduling.</p>
+  <Panel title="Content items" status="planned">
+  <div class="state"><strong>Not connected</strong><span>Persistent storage not implemented yet — buttons will not pretend to save.</span></div>
+  </Panel>
+
+</Base>

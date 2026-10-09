@@ -1,0 +1,15 @@
+---
+import Base from '../layouts/Base.astro';
+import Panel from '../components/Panel.astro';
+---
+<Base title="GitHub — Nexus CMS" active="github" crumb={['Mission Control', 'GitHub']}>
+  <h1 class="text-2xl font-bold tracking-tight m-0 mb-1">GitHub</h1>
+  <p class="opacity-60 text-sm m-0 mb-6">Repositories, commits and deployment traceability.</p>
+  <Panel title="Repositories" status="disconnected">
+  <div class="state"><strong>Not connected</strong><span>Repository list and default branches appear when connected.</span></div>
+  </Panel>
+<Panel title="Deployment traceability" status="disconnected">
+  <div class="state"><strong>Not connected</strong><span>Live commit vs deployed commit comparison appears when connected.</span></div>
+  </Panel>
+
+</Base>
