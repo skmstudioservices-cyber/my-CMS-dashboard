@@ -22,15 +22,16 @@ const groups = [
   ]},
 ];
 ---
-<aside data-theme="skmside" class="hidden lg:flex flex-col gap-0.5 p-4 bg-base-100 border-r border-base-300 overflow-y-auto">
-  <div class="px-3 pb-6 text-lg font-extrabold tracking-tight">◈ Nexus CMS</div>
+<!-- BLOCK:SIDEBAR — explicit hex colours so contrast can never break on the dark panel -->
+<aside data-theme="skmside" class="hidden lg:flex flex-col gap-0.5 p-4 bg-[#0f172a] text-[#e6ebf3] border-r border-[#243146] overflow-y-auto">
+  <div class="px-3 pb-6 text-lg font-extrabold tracking-tight text-white">◈ Nexus CMS</div>
   {groups.map((g) => (
     <>
-      <div class="px-3 pt-4 pb-1 text-[11px] uppercase tracking-[0.12em] opacity-60">{g.label}</div>
+      <div class="px-3 pt-4 pb-1 text-[11px] uppercase tracking-[0.12em] text-[#94a3b8]">{g.label}</div>
       {g.items.map((it) => (
         <a href={it.href} class:list={[
           "px-3 py-2.5 rounded-lg text-sm flex items-center gap-2.5 transition-colors",
-          it.id === active ? "bg-primary/15 text-primary font-semibold" : "opacity-75 hover:opacity-100 hover:bg-base-200"
+          it.id === active ? "bg-[#26364f] text-white font-semibold" : "text-[#cbd5e1] hover:bg-[#1b2740] hover:text-white"
         ]}>
           <span class="w-4 text-center">{it.icon}</span>{it.name}
         </a>
