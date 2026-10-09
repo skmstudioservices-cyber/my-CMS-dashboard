@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="Nexus CMS">
+  <rect width="512" height="512" rx="96" fill="#0b1220"/>
+  <rect x="72" y="72" width="368" height="368" rx="76" fill="#7dd3fc"/>
+  <text x="256" y="356" font-family="system-ui,Segoe UI,sans-serif" font-size="300" font-weight="800" text-anchor="middle" fill="#04121f">N</text>
+</svg>
