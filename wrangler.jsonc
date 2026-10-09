@@ -1,6 +1,14 @@
 {
+  // my-CMS-dashboard Worker config.
+  // NOTE: Cloudflare Workers Builds runs `npx wrangler deploy` with no build step and
+  // does NOT read CI config from this file — but `wrangler deploy` itself DOES run
+  // build.command below before deploying. This is what makes the dashboard-triggered
+  // build produce dist/_worker.js/index.js.
   "name": "my-cms-dashboard",
   "main": "dist/_worker.js/index.js",
+  "build": {
+    "command": "npm run build"
+  },
   "compatibility_date": "2026-10-01",
   "compatibility_flags": [
     "nodejs_compat"
@@ -10,68 +18,22 @@
     "binding": "ASSETS"
   },
   "d1_databases": [
-    {
-      "binding": "CMS_DB",
-      "database_name": "cms-db",
-      "database_id": "7d148ab5-37f1-4721-ba90-bea6472390c2"
-    },
-    {
-      "binding": "SEO_DB",
-      "database_name": "seo-keywords-db",
-      "database_id": "b3d0300d-7362-489e-91e9-d2dfece64b63"
-    },
-    {
-      "binding": "MAPS_DB",
-      "database_name": "mapsnearme-db",
-      "database_id": "03a74322-da9e-485d-af1c-e73249d19039"
-    },
-    {
-      "binding": "PINCODE_DB",
-      "database_name": "pincode-india-db",
-      "database_id": "74274a3f-9fca-42ec-9fbf-c707ffbc56a4"
-    },
-    {
-      "binding": "EXAM_DB",
-      "database_name": "examstatus-db",
-      "database_id": "5929f80d-1368-417a-9023-3154807b44f1"
-    },
-    {
-      "binding": "EXAM_APAC",
-      "database_name": "examstatus-db-apac",
-      "database_id": "ecd46bbf-6c1b-4147-8ca7-4ea5336fc1d2"
-    },
-    {
-      "binding": "SKMTOOLS_DB",
-      "database_name": "skmtools-db",
-      "database_id": "7aef892a-7324-4ccf-ba7f-c1adbe0c9b24"
-    }
+    { "binding": "CMS_DB", "database_name": "cms-db", "database_id": "7d148ab5-37f1-4721-ba90-bea6472390c2" },
+    { "binding": "SEO_DB", "database_name": "seo-keywords-db", "database_id": "b3d0300d-7362-489e-91e9-d2dfece64b63" },
+    { "binding": "MAPS_DB", "database_name": "mapsnearme-db", "database_id": "03a74322-da9e-485d-af1c-e73249d19039" },
+    { "binding": "PINCODE_DB", "database_name": "pincode-india-db", "database_id": "74274a3f-9fca-42ec-9fbf-c707ffbc56a4" },
+    { "binding": "EXAM_DB", "database_name": "examstatus-db", "database_id": "5929f80d-1368-417a-9023-3154807b44f1" },
+    { "binding": "EXAM_APAC", "database_name": "examstatus-db-apac", "database_id": "ecd46bbf-6c1b-4147-8ca7-4ea5336fc1d2" },
+    { "binding": "SKMTOOLS_DB", "database_name": "skmtools-db", "database_id": "7aef892a-7324-4ccf-ba7f-c1adbe0c9b24" }
   ],
   "kv_namespaces": [
-    {
-      "binding": "NEXUS_CACHE",
-      "id": "e0d8b85873724d2a9779f84b91676e41"
-    },
-    {
-      "binding": "SESSION",
-      "id": "cdfd21fd5b28429c9276432ed3d15355"
-    },
-    {
-      "binding": "MAPS_ADS",
-      "id": "5d3d1232c58e489c8aa016664ca22820"
-    },
-    {
-      "binding": "MAPS_ADS2",
-      "id": "27b1859eb4f542f58bc33459a7d01520"
-    }
+    { "binding": "NEXUS_CACHE", "id": "e0d8b85873724d2a9779f84b91676e41" },
+    { "binding": "SESSION", "id": "cdfd21fd5b28429c9276432ed3d15355" },
+    { "binding": "MAPS_ADS", "id": "5d3d1232c58e489c8aa016664ca22820" },
+    { "binding": "MAPS_ADS2", "id": "27b1859eb4f542f58bc33459a7d01520" }
   ],
-  "ai": {
-    "binding": "AI"
-  },
+  "ai": { "binding": "AI" },
   "triggers": {
-    "crons": [
-      "0 */3 * * *",
-      "0 */6 * * *",
-      "0 2 * * *"
-    ]
+    "crons": ["0 */3 * * *", "0 */6 * * *", "0 2 * * *"]
   }
 }
