@@ -516,60 +516,83 @@ async function aggregateDailyLogs(env) {
 
 function renderLoginPage() {
   return `<!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-theme="dark">
 <head>
   <meta charset="UTF-8">
   <title>Login — Nexus CMS</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;700;800&display=swap" rel="stylesheet">
   <style>
-    body {
-      background: #090d16;
-      color: #f8fafc;
-      font-family: 'Plus Jakarta Sans', sans-serif;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      min-height: 100vh;
-      margin: 0;
-    }
-    .card {
-      background: #101726;
-      border: 1px solid #1e293b;
-      padding: 36px;
-      border-radius: 16px;
-      width: 100%;
-      max-width: 400px;
-      box-shadow: 0 10px 30px rgba(0,0,0,0.5);
-    }
-    .icon {
-      width: 44px; height: 44px;
-      background: linear-gradient(135deg, #0284c7, #38bdf8);
-      border-radius: 12px;
-      display: flex; align-items: center; justify-content: center;
-      font-size: 20px; font-weight: 800; color: white; margin-bottom: 20px;
-    }
-    h2 { margin: 0 0 8px 0; font-size: 22px; font-weight: 700; }
-    p { margin: 0 0 24px 0; font-size: 13px; color: #94a3b8; }
-    input {
-      width: 100%; box-sizing: border-box;
-      padding: 12px 14px; background: #0b1120;
-      border: 1px solid #1e293b; border-radius: 8px;
-      color: #f8fafc; font-size: 14px; margin-bottom: 16px;
-    }
-    button {
-      width: 100%; padding: 12px;
-      background: #38bdf8; border: none; border-radius: 8px;
-      color: #090d16; font-weight: 700; cursor: pointer; font-size: 14px;
-    }
-    button:hover { opacity: 0.9; }
-    .demo-link {
-      display: block; text-align: center; margin-top: 18px;
-      color: #38bdf8; font-size: 13px; text-decoration: none;
-    }
-  </style>
+:root{
+  --fs:16px; --lh:1.65;
+  --bg:#0b1220; --surface:#131c2e; --border:#3b4a63; --hover:#1c2740;
+  --text:#f2f6fc; --muted:#c7d2e0; --accent:#7dd3fc; --accent-ink:#04121f;
+  --glow:rgba(125,211,252,.18); --ok:#34d399; --warn:#fbbf24; --bad:#fca5a5; --tag:#1e293b;
+  --sw:280px;
+}
+html[data-theme="light"]{
+  --bg:#ffffff; --surface:#f4f7fb; --border:#b8c4d4; --hover:#e8eef6;
+  --text:#0a1220; --muted:#2b3a4d; --accent:#0b5ed7; --accent-ink:#ffffff;
+  --glow:rgba(11,94,215,.12); --ok:#047857; --warn:#a15c00; --bad:#b91c1c; --tag:#e2e8f0;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html{font-size:var(--fs)}
+body{font-family:'Plus Jakarta Sans',system-ui,-apple-system,sans-serif;background:var(--bg);color:var(--text);min-height:100vh;font-size:1rem;line-height:var(--lh)}
+a{color:var(--accent)}
+:focus-visible{outline:3px solid var(--accent);outline-offset:2px;border-radius:6px}
+.skip{position:absolute;left:-999px}
+.skip:focus{left:8px;top:8px;z-index:999;background:var(--accent);color:var(--accent-ink);padding:10px 14px;border-radius:8px}
+.mode-bar{display:flex;align-items:center;gap:14px;flex-wrap:wrap;padding:12px 20px;font-size:.95rem;border-bottom:2px solid var(--border);position:sticky;top:0;z-index:50;background:var(--surface)}
+.mode-pill{font-weight:800;letter-spacing:.03em;font-size:.8rem;padding:5px 12px;border-radius:999px;background:var(--tag);color:var(--text)}
+.mode-note{color:var(--muted)}
+.mode-switch{margin-left:auto;font-weight:700;text-decoration:underline}
+.shell{display:flex;min-height:calc(100vh - 52px)}
+aside{width:var(--sw);background:var(--surface);border-right:2px solid var(--border);flex-shrink:0;position:sticky;top:52px;height:calc(100vh - 52px);overflow-y:auto;padding-bottom:32px}
+.brand{padding:20px 20px 12px;font-weight:800;font-size:1.15rem}
+.brand span{color:var(--accent)}
+.nav-section{padding:16px 18px 6px;font-size:.78rem;font-weight:800;text-transform:uppercase;letter-spacing:.07em;color:var(--muted)}
+.nav-item{display:flex;align-items:center;gap:11px;padding:13px 18px;font-size:1.02rem;color:var(--text);cursor:pointer;border-left:4px solid transparent;text-decoration:none}
+.nav-item:hover{background:var(--hover)}
+.nav-item.active{color:var(--accent);background:var(--glow);border-left-color:var(--accent);font-weight:700}
+.nav-badge{margin-left:auto;font-size:.78rem;padding:2px 9px;border-radius:10px;background:var(--tag);color:var(--muted)}
+main{flex:1;min-width:0;padding:24px 28px 80px}
+header{display:flex;align-items:flex-end;justify-content:space-between;gap:18px;flex-wrap:wrap;margin-bottom:22px}
+.h-title{font-size:1.6rem;font-weight:800;line-height:1.3}
+.h-sub{font-size:.98rem;color:var(--muted);margin-top:5px}
+.btn{display:inline-flex;align-items:center;gap:8px;padding:11px 16px;border-radius:11px;border:2px solid var(--border);background:var(--surface);color:var(--text);font-size:.95rem;font-weight:700;cursor:pointer;text-decoration:none}
+.btn:hover{background:var(--hover)}
+.btn-primary{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
+.btn-sm{padding:8px 12px;font-size:.9rem}
+.grid{display:grid;gap:16px}
+.g4{grid-template-columns:repeat(auto-fit,minmax(210px,1fr))}
+.card{background:var(--surface);border:2px solid var(--border);border-radius:16px;padding:20px;margin-bottom:16px}
+.card-head{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:14px;flex-wrap:wrap}
+.card-title{font-weight:800;font-size:1.1rem}
+.stat{background:var(--surface);border:2px solid var(--border);border-radius:16px;padding:18px}
+.stat .l{font-size:.8rem;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;font-weight:700}
+.stat .v{font-size:1.9rem;font-weight:800;margin-top:8px;line-height:1.1}
+.stat .s{font-size:.88rem;color:var(--muted);margin-top:4px}
+.badge{display:inline-block;font-size:.85rem;padding:3px 10px;border-radius:9px;background:var(--tag);color:var(--text);margin:2px}
+table{width:100%;border-collapse:collapse;font-size:.97rem}
+th,td{text-align:left;padding:12px 12px;border-bottom:2px solid var(--border);vertical-align:top}
+th{font-size:.8rem;text-transform:uppercase;color:var(--muted);letter-spacing:.05em;font-weight:800}
+code,.mono,pre{font-family:'JetBrains Mono',monospace;font-size:.92rem}
+input,select,textarea{background:var(--bg);border:2px solid var(--border);color:var(--text);border-radius:11px;padding:12px 13px;font-size:1rem;font-family:inherit;width:100%}
+.bar{height:11px;border-radius:7px;background:var(--tag);overflow:hidden;margin-top:8px}
+.bar > i{display:block;height:100%;background:var(--ok)}
+.pill{font-size:.9rem;padding:5px 12px;border-radius:999px;background:var(--tag);color:var(--text)}
+.ok{color:var(--ok);font-weight:700}.warn{color:var(--warn);font-weight:700}.bad{color:var(--bad);font-weight:700}.muted{color:var(--muted)}
+.row{display:flex;gap:12px;flex-wrap:wrap;align-items:center}
+pre.out{background:var(--bg);border:2px solid var(--border);border-radius:12px;padding:16px;overflow:auto;max-height:420px;white-space:pre-wrap;word-break:break-word;line-height:1.55}
+.spin{display:inline-block;width:16px;height:16px;border:3px solid var(--tag);border-top-color:var(--accent);border-radius:50%;animation:sp .7s linear infinite;vertical-align:-3px}
+@keyframes sp{to{transform:rotate(360deg)}}
+.toast{position:fixed;bottom:22px;right:22px;background:var(--surface);border:2px solid var(--accent);border-radius:12px;padding:16px 20px;font-size:1rem;box-shadow:0 12px 34px rgba(0,0,0,.45);display:none;z-index:100;max-width:380px}
+@media(max-width:860px){aside{position:fixed;left:-105%;transition:left .2s;z-index:60}aside.open{left:0}.shell{display:block}main{padding:18px 16px 80px}}
+
+</style>
 </head>
 <body>
+<a class="skip" href="#view">Skip to content</a>
   <div class="card">
     <div class="icon">N</div>
     <h2>Nexus CMS Dashboard</h2>
@@ -1082,6 +1105,10 @@ pre.out{background:var(--bg);border:1px solid var(--border);border-radius:10px;p
         <div class="h-sub" id="pageSub">Mission control for the SKM network</div>
       </div>
       <div class="row">
+        <button class="btn btn-sm" onclick="toggleTheme()" title="Switch light / dark theme" aria-label="Switch light or dark theme">🌗 Theme</button>
+        <button class="btn btn-sm" onclick="bumpFont(-1)" title="Smaller text" aria-label="Decrease text size">A−</button>
+        <button class="btn btn-sm" onclick="bumpFont(0)" title="Reset text size" aria-label="Reset text size">A</button>
+        <button class="btn btn-sm" onclick="bumpFont(1)" title="Larger text" aria-label="Increase text size">A+</button>
         <a class="btn" href="https://github.com/skmstudioservices-cyber/my-CMS-dashboard" target="_blank" rel="noopener">🐙 Repo</a>
         <button class="btn btn-primary" onclick="syncNow()">🔄 Scan Resources</button>
       </div>
@@ -1299,6 +1326,11 @@ RENDER.mcp=function(){
 
 window.syncNow=function(){ toast('Scanning…'); api('/api/sync_resources').then(function(d){ toast('Resources synced'); show('sites'); }).catch(function(e){ toast('Failed: '+e.message); }); };
 
+function applyTheme(t){ document.documentElement.setAttribute('data-theme', t); try{ localStorage.setItem('nx_theme', t); }catch(e){} }
+function toggleTheme(){ var cur=document.documentElement.getAttribute('data-theme')||'dark'; applyTheme(cur==='dark'?'light':'dark'); }
+function applyFont(px){ document.documentElement.style.setProperty('--fs', px+'px'); try{ localStorage.setItem('nx_fs', px); }catch(e){} }
+function bumpFont(d){ var cur=parseInt((function(){try{return localStorage.getItem('nx_fs')||'16';}catch(e){return '16';}})(),10); if(d===0){cur=16;} else { cur=Math.min(22, Math.max(13, cur + d)); } applyFont(cur); toast('Text size '+cur+'px'); }
+(function(){ try{ var t=localStorage.getItem('nx_theme'); if(t) applyTheme(t); var f=localStorage.getItem('nx_fs'); if(f) applyFont(parseInt(f,10)); }catch(e){} })();
 /* boot */
 (function(){ $$('.nav-item').forEach(function(a){ a.addEventListener('click', function(ev){ ev.preventDefault(); show(a.dataset.tab); }); }); var h=(location.hash||'').replace('#','')||'overview'; show(TITLES[h]?h:'overview'); })();
 </script>
