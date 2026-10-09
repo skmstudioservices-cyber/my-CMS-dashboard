@@ -1,13 +1,13 @@
 ---
-// BLOCK:LAYOUT-BASE — daisyUI-first shell + the only custom JS (block decorator,
-// comments, colour wheel, copy/send). Everything visual is a daisyUI component.
+// BLOCK:LAYOUT-BASE — daisyUI-first. Custom JS only for: theme/font, block-level
+// marks + 💬 comment chips, the single colour panel, single copy-all.
 import '../styles/global.css';
 
 interface Props { title?: string; }
 const { title = 'Nexus CMS' } = Astro.props;
 ---
 <!DOCTYPE html>
-<html lang="en" data-theme="skmdark">
+<html lang="en" data-theme="business">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -28,24 +28,38 @@ const { title = 'Nexus CMS' } = Astro.props;
     <!-- BLOCK:DRAWER-CONTENT -->
     <div class="drawer-content flex min-h-screen flex-col">
       <!-- BLOCK:NAVBAR -->
-      <header class="navbar sticky top-0 z-40 border-b-2 border-base-300 bg-base-200">
-        <div class="flex-none lg:hidden">
-          <label for="nav" aria-label="Open menu" class="btn btn-square btn-ghost">☰</label>
+      <header class="navbar sticky top-0 z-40 gap-2 border-b border-base-300 bg-base-100/95 backdrop-blur">
+        <div class="flex-none lg:hidden"><label for="nav" aria-label="Open menu" class="btn btn-square btn-ghost">☰</label></div>
+        <div class="flex-1 px-1">
+          <span class="text-lg font-bold">⚡ Nexus CMS</span>
         </div>
-        <div class="flex-1 px-2">
-          <span class="text-lg font-extrabold">⚡ Nexus <span class="text-primary">CMS</span></span>
-          <span class="badge badge-primary badge-sm ml-2">live</span>
-        </div>
-        <div class="flex-none gap-2">
+        <div class="flex flex-none flex-wrap items-center gap-2">
+          <select id="themeSel" class="select select-sm select-bordered w-36" aria-label="Theme">
+            <option value="business">business</option>
+            <option value="corporate">corporate</option>
+            <option value="luxury">luxury</option>
+            <option value="nord">nord</option>
+            <option value="dim">dim</option>
+            <option value="abyss">abyss</option>
+            <option value="silk">silk</option>
+            <option value="night">night</option>
+            <option value="dark">dark</option>
+            <option value="winter">winter</option>
+          </select>
+          <select id="levelSel" class="select select-sm select-bordered w-28" aria-label="Block outline level">
+            <option value="0">blocks off</option>
+            <option value="1" selected>L1 outer</option>
+            <option value="2">L2 inner</option>
+            <option value="3">L3 fine</option>
+          </select>
+          <button class="btn btn-sm" id="btnColors" aria-label="Colours">🎨 Colours</button>
+          <button class="btn btn-sm btn-primary" id="btnCopyAll">📋 Copy all</button>
           <div class="join">
             <button class="btn btn-sm join-item" data-fs="-1" aria-label="Smaller text">A−</button>
             <button class="btn btn-sm join-item" data-fs="0" aria-label="Reset text">A</button>
             <button class="btn btn-sm join-item" data-fs="1" aria-label="Larger text">A+</button>
           </div>
-          <button class="btn btn-sm" id="btnTheme" aria-label="Switch light or dark theme">🌗</button>
-          <button class="btn btn-sm" id="btnBlocks" aria-label="Toggle block outlines">🔲</button>
-          <a class="btn btn-sm btn-ghost" href="https://github.com/skmstudioservices-cyber/my-CMS-dashboard" target="_blank" rel="noopener" aria-label="Repo">🐙</a>
-          <button class="btn btn-sm btn-primary" id="btnSync">🔄 Sync</button>
+          <button class="btn btn-sm btn-ghost" id="btnSync">🔄</button>
         </div>
       </header>
 
@@ -53,11 +67,8 @@ const { title = 'Nexus CMS' } = Astro.props;
       <main class="flex-1 p-4 lg:p-6">
         <div class="mb-5 flex flex-wrap items-end justify-between gap-3" data-block="main.header">
           <div>
-            <h1 class="text-2xl font-extrabold" id="pageTitle">Overview</h1>
-            <p class="text-sm opacity-70" id="pageSub">Mission control for the SKM network</p>
-          </div>
-          <div class="flex flex-wrap gap-2">
-            <button class="btn btn-sm" id="btnCopyAll">📋 Copy all comments as one prompt</button>
+            <h1 class="text-2xl font-bold" id="pageTitle">Overview</h1>
+            <p class="text-sm opacity-60" id="pageSub">Mission control for the SKM network</p>
           </div>
         </div>
         <div id="view"><span class="loading loading-spinner loading-lg"></span></div>
@@ -89,48 +100,33 @@ const { title = 'Nexus CMS' } = Astro.props;
 
   <!-- BLOCK:DIALOG-COMMENT -->
   <dialog id="dlgComment" class="modal">
-    <div class="modal-box max-w-2xl">
+    <div class="modal-box max-w-xl">
       <h3 class="text-lg font-bold">💬 Comment</h3>
-      <p class="mt-1 font-mono text-xs opacity-70">block: <span id="cmBlock"></span> · <span id="cmLines"></span></p>
+      <p class="mt-1 font-mono text-xs opacity-60"><span id="cmBlock"></span> · <span id="cmLines"></span></p>
       <textarea id="cmText" class="textarea textarea-bordered mt-3 w-full" rows="4" placeholder="What should change?"></textarea>
-      <div class="mt-2 flex flex-wrap items-center gap-2">
-        <button class="btn btn-sm" id="cmVoice">🎤 Voice</button>
-        <span id="cmColorChip" class="hidden items-center gap-2"><span class="badge badge-lg">🎨</span><span class="font-mono" id="cmColorHex"></span></span>
-      </div>
+      <div class="mt-2"><button class="btn btn-sm" id="cmVoice">🎤 Voice</button></div>
       <div class="modal-action">
         <button class="btn btn-ghost" data-close>Cancel</button>
-        <button class="btn" id="cmCopyBtn">📋 Copy prompt</button>
-        <button class="btn btn-primary" id="cmSendBtn">🚀 Send to agent</button>
+        <button class="btn btn-primary" id="cmSave">Save comment</button>
       </div>
     </div>
   </dialog>
 
-  <!-- BLOCK:DIALOG-COLOR -->
-  <dialog id="dlgColor" class="modal">
+  <!-- BLOCK:DIALOG-COLORS — the single colour panel -->
+  <dialog id="dlgColors" class="modal">
     <div class="modal-box max-w-2xl">
-      <h3 class="text-lg font-bold">🎨 Pick a colour</h3>
-      <p class="mt-1 font-mono text-xs opacity-70">target: <span id="colBlock"></span></p>
-      <div class="mt-3 grid gap-4 sm:grid-cols-2">
-        <div>
-          <input type="color" id="colPick" class="h-44 w-full cursor-pointer rounded-box border-2 border-base-300" value="#7dd3fc" aria-label="Colour wheel" />
-          <div class="mt-2 flex items-center gap-2">
-            <input id="colHex" class="input input-bordered w-32 font-mono" value="#7dd3fc" aria-label="Hex value" />
-            <button class="btn btn-sm" id="colShades">Shades</button>
-          </div>
-          <div id="colSwatches" class="mt-2 flex flex-wrap gap-2"></div>
-        </div>
-        <div>
-          <div class="card bg-base-200"><div class="card-body">
-            <div class="text-xs uppercase opacity-60">Live preview</div>
-            <div id="colPreview" class="mt-3 rounded-box p-4 font-semibold" style="background:#7dd3fc;color:#04121f">Sample text on this colour</div>
-            <div id="colContrast" class="mt-3 text-sm"></div>
-          </div></div>
-        </div>
+      <h3 class="text-lg font-bold">🎨 Colours</h3>
+      <p class="mt-1 text-sm opacity-60">Changes apply live to the whole dashboard. Pick, preview, save.</p>
+      <div id="colorGrid" class="mt-4 grid gap-3 sm:grid-cols-2"></div>
+      <div class="mt-4">
+        <div class="text-xs uppercase opacity-60">Your swatches</div>
+        <div id="swatchRow" class="mt-2 flex flex-wrap gap-2"></div>
+        <button class="btn btn-sm mt-2" id="swatchAdd">＋ Add current colour</button>
       </div>
       <div class="modal-action">
         <button class="btn btn-ghost" data-close>Close</button>
-        <button class="btn" id="colApply">Apply to element</button>
-        <button class="btn btn-primary" id="colToComment">Use in comment</button>
+        <button class="btn" id="colReset">Reset</button>
+        <button class="btn btn-primary" id="colSave">Save</button>
       </div>
     </div>
   </dialog>
@@ -138,7 +134,7 @@ const { title = 'Nexus CMS' } = Astro.props;
   <div id="toast" class="toast toast-end z-50 hidden"><div class="alert alert-info"><span id="toastMsg"></span></div></div>
 
   <script>
-    // ===== BLOCK:ENGINE — the ONLY custom JS (daisyUI handles the visuals) =====
+    // ===== BLOCK:ENGINE — the only custom JS =====
     const $ = (s, r = document) => r.querySelector(s);
     const $$ = (s, r = document) => [...r.querySelectorAll(s)];
     const api = (p, o) => fetch(p, o).then((r) => (r.headers.get('content-type') || '').includes('json') ? r.json() : r.text());
@@ -146,16 +142,22 @@ const { title = 'Nexus CMS' } = Astro.props;
     const fmt = (n) => Number(n || 0).toLocaleString('en-IN');
     function toast(m) { $('#toastMsg').textContent = m; const t = $('#toast'); t.classList.remove('hidden'); clearTimeout(t._t); t._t = setTimeout(() => t.classList.add('hidden'), 2600); }
 
-    // ---- theme + font + blocks ----
-    const setTheme = (t) => { document.documentElement.setAttribute('data-theme', t); try { localStorage.setItem('nx_theme', t); } catch {} };
-    $('#btnTheme')?.addEventListener('click', () => setTheme(document.documentElement.getAttribute('data-theme') === 'skmdark' ? 'skmlight' : 'skmdark'));
+    // ---- theme ----
+    const setTheme = (t) => { document.documentElement.setAttribute('data-theme', t); try { localStorage.setItem('nx_theme', t); } catch {} $('#themeSel').value = t; };
+    $('#themeSel')?.addEventListener('change', (e) => { setTheme(e.target.value); toast('Theme: ' + e.target.value); });
     const setFs = (px) => { document.documentElement.style.setProperty('--fs', px + 'px'); try { localStorage.setItem('nx_fs', px); } catch {} };
     $$('[data-fs]').forEach((b) => b.addEventListener('click', () => {
-      const d = +b.dataset.fs; let cur = parseInt(localStorage.getItem('nx_fs') || '17', 10);
-      cur = d === 0 ? 17 : Math.min(24, Math.max(14, cur + d)); setFs(cur); toast('Text ' + cur + 'px');
+      const d = +b.dataset.fs; let cur = parseInt(localStorage.getItem('nx_fs') || '16', 10);
+      cur = d === 0 ? 16 : Math.min(22, Math.max(13, cur + d)); setFs(cur); toast('Text ' + cur + 'px');
     }));
-    $('#btnBlocks')?.addEventListener('click', () => document.documentElement.classList.toggle('blocks-on'));
-    (() => { try { const t = localStorage.getItem('nx_theme'); if (t) setTheme(t); const f = localStorage.getItem('nx_fs'); if (f) setFs(parseInt(f, 10)); } catch {} })();
+    $('#levelSel')?.addEventListener('change', (e) => { document.documentElement.setAttribute('data-blevel', e.target.value); try { localStorage.setItem('nx_blevel', e.target.value); } catch {} });
+    (() => {
+      try {
+        const t = localStorage.getItem('nx_theme'); if (t) setTheme(t);
+        const f = localStorage.getItem('nx_fs'); if (f) setFs(parseInt(f, 10));
+        const bl = localStorage.getItem('nx_blevel') || '1'; document.documentElement.setAttribute('data-blevel', bl); $('#levelSel').value = bl;
+      } catch {}
+    })();
 
     // ---- block line-map ----
     let BLOCKMAP = {};
@@ -174,11 +176,12 @@ const { title = 'Nexus CMS' } = Astro.props;
     }
     $$('.nav-item').forEach((a) => a.addEventListener('click', (e) => { if (!a.dataset.tab) return; e.preventDefault(); show(a.dataset.tab); }));
 
-    // ---- BLOCK:ELEMENT-DECORATOR ----
+    // ---- BLOCK:DECORATOR — label every element, level it, add ONE 💬 ----
+    const INTERACTIVE = new Set(['button', 'a', 'input', 'select', 'textarea', 'label']);
     function isMeaningful(el) {
       const tag = el.tagName.toLowerCase();
       if (['script', 'style', 'dialog', 'path', 'html', 'body'].includes(tag)) return false;
-      if (el.classList.contains('blk-tools') || el.classList.contains('skip')) return false;
+      if (el.classList.contains('blk-cmt') || el.classList.contains('blk-cmt-i') || el.classList.contains('skip')) return false;
       if (['button', 'a', 'img', 'svg', 'input', 'select', 'textarea', 'h1', 'h2', 'h3', 'h4', 'p', 'td', 'th', 'li', 'label', 'code', 'pre', 'span'].includes(tag)) return true;
       return [...el.childNodes].some((n) => n.nodeType === 3 && n.textContent.trim());
     }
@@ -188,168 +191,107 @@ const { title = 'Nexus CMS' } = Astro.props;
       while (p && p !== document.body) { if (p.dataset.block) { base = p.dataset.block; break; } p = p.parentElement; }
       const tag = el.tagName.toLowerCase();
       const sibs = p ? [...p.children].filter((c) => c.tagName === el.tagName) : [el];
-      const idx = sibs.indexOf(el) + 1;
-      const role = tag === 'button' ? 'btn' : tag;
-      return (base ? base + '.' : '') + role + idx;
+      return (base ? base + '.' : '') + (tag === 'button' ? 'btn' : tag) + (sibs.indexOf(el) + 1);
     }
-    const toolsHTML = (id) =>
-      '<div class="blk-tools">' +
-      '<button class="btn btn-xs btn-primary" data-cmt="' + id + '" title="Comment">💬</button>' +
-      '<button class="btn btn-xs btn-secondary" data-color="' + id + '" title="Colour">🎨</button>' +
-      '<button class="btn btn-xs" data-copy="' + id + '" title="Copy prompt">📋</button>' +
-      '<button class="btn btn-xs btn-accent" data-send="' + id + '" title="Send to agent">🚀</button>' +
-      '</div>';
-    const INTERACTIVE = new Set(['button', 'a', 'input', 'select', 'textarea', 'label']);
     function decorate(root) {
       if (!root) return;
       for (const el of [root, ...root.querySelectorAll('*')]) {
         if (!(el instanceof HTMLElement)) continue;
-        if (el.classList.contains('blk-tools') || el.closest('.blk-tools')) continue;
-        if (el.classList.contains('blk-inline')) continue;
+        if (el.classList.contains('blk-cmt') || el.classList.contains('blk-cmt-i') || el.closest('.blk-cmt')) continue;
         if (!isMeaningful(el)) continue;
         if (!el.dataset.block) el.dataset.block = autoPath(el);
+        let lvl = 0, p = el.parentElement;
+        while (p && p !== document.body) { if (p.dataset.block) lvl++; p = p.parentElement; }
+        el.dataset.level = String(Math.min(3, lvl + 1));
         const tag = el.tagName.toLowerCase();
         if (INTERACTIVE.has(tag)) {
-          // never put tools INSIDE an interactive element (it would block clicks) —
-          // add a small 💬 chip right after it instead
           const nx = el.nextElementSibling;
-          if (!(nx && nx.classList && nx.classList.contains('blk-inline')))
-            el.insertAdjacentHTML('afterend', '<button class="btn btn-xs btn-primary blk-inline" data-cmt="' + el.dataset.block + '" title="Comment">💬</button>');
+          if (!(nx && nx.classList && nx.classList.contains('blk-cmt-i')))
+            el.insertAdjacentHTML('afterend', '<button class="btn btn-xs btn-primary blk-cmt-i" data-cmt="' + el.dataset.block + '" title="Comment">💬</button>');
         } else {
-          if (!el.querySelector(':scope > .blk-tools')) el.insertAdjacentHTML('afterbegin', toolsHTML(el.dataset.block));
+          if (!el.querySelector(':scope > .blk-cmt'))
+            el.insertAdjacentHTML('afterbegin', '<button class="btn btn-xs btn-primary blk-cmt" data-cmt="' + el.dataset.block + '" title="Comment">💬</button>');
         }
       }
     }
     const _view = $('#view');
     new MutationObserver(() => { clearTimeout(window._dec); window._dec = setTimeout(() => decorate(_view), 60); }).observe(_view, { childList: true, subtree: true });
 
-    // ---- comment dialog ----
-    let cmBlockId = null, cmColor = null;
-    function openComment(id) {
-      cmBlockId = id;
-      $('#cmBlock').textContent = id; $('#cmLines').textContent = lineInfo(id);
-      $('#cmText').value = '';
-      if (!cmColor) $('#cmColorChip').classList.add('hidden'); else { $('#cmColorHex').textContent = cmColor; $('#cmColorChip').classList.remove('hidden'); }
-      $('#dlgComment').showModal();
-    }
-    document.addEventListener('click', (e) => {
-      const b = e.target.closest('[data-cmt],[data-color],[data-copy],[data-send]');
-      if (!b) return;
-      const id = b.dataset.cmt || b.dataset.color || b.dataset.copy || b.dataset.send;
-      if (b.dataset.cmt) openComment(id);
-      else if (b.dataset.color) openColor(id);
-      else if (b.dataset.copy) buildPrompt(id).then((p) => navigator.clipboard.writeText(p).then(() => toast('Prompt copied')));
-      else if (b.dataset.send) buildPrompt(id).then((p) => sendPrompt(id, p));
+    // ---- comment ----
+    let cmBlockId = null;
+    document.addEventListener('click', (e) => { const b = e.target.closest('[data-cmt]'); if (!b) return; cmBlockId = b.dataset.cmt; $('#cmBlock').textContent = cmBlockId; $('#cmLines').textContent = lineInfo(cmBlockId); $('#cmText').value = ''; $('#dlgComment').showModal(); });
+    $('#cmVoice')?.addEventListener('click', () => { const SR = window.SpeechRecognition || window.webkitSpeechRecognition; if (!SR) return toast('Voice not supported'); const r = new SR(); r.lang = 'en-IN'; r.onresult = (e) => { $('#cmText').value = ($('#cmText').value + ' ' + e.results[0][0].transcript).trim(); }; r.start(); toast('Listening…'); });
+    $('#cmSave')?.addEventListener('click', async () => {
+      await api('/api/comments', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ block_id: cmBlockId, comment: $('#cmText').value }) }).catch(() => {});
+      toast('Comment saved'); $('#dlgComment').close();
     });
-    const promptFor = (id, note, color) => {
-      const e = BLOCKMAP[id] || {};
-      return 'Block: ' + id + '\nFile: ' + (e.file || 'src') + ' lines ' + (e.start || '?') + '–' + (e.end || '?') +
-        (color ? '\nColour: use ' + color : '') + '\nNote: ' + (note || '(none)') + '\nTask: revise this element and return the updated code.';
-    };
-    async function buildPrompt(id) {
-      const d = await api('/api/comments').catch(() => ({}));
-      const notes = (d.comments || []).filter((c) => c.site_id === id);
-      return promptFor(id, notes.map((n) => n.comment).join(' | '), cmColor);
-    }
-    async function sendPrompt(id, prompt) {
-      try { await api('/api/comments', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ block_id: id, comment: prompt }) }); toast('🚀 Queued for the agent'); }
-      catch { toast('Send failed'); }
-    }
-    $('#cmCopyBtn')?.addEventListener('click', async () => {
-      await api('/api/comments', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ block_id: cmBlockId, comment: $('#cmText').value, color: cmColor }) }).catch(() => {});
-      navigator.clipboard.writeText(promptFor(cmBlockId, $('#cmText').value, cmColor)).then(() => toast('Copied + saved'));
-      cmColor = null; $('#dlgComment').close();
-    });
-    $('#cmSendBtn')?.addEventListener('click', async () => { await sendPrompt(cmBlockId, promptFor(cmBlockId, $('#cmText').value, cmColor)); cmColor = null; $('#dlgComment').close(); });
-    $('#cmVoice')?.addEventListener('click', () => {
-      const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
-      if (!SR) return toast('Voice not supported');
-      const r = new SR(); r.lang = 'en-IN';
-      r.onresult = (e) => { $('#cmText').value = ($('#cmText').value + ' ' + e.results[0][0].transcript).trim(); };
-      r.start(); toast('Listening…');
-    });
-
-    // ---- colour wheel ----
-    let colBlockId = null;
-    const rgbToHex = (c) => { const m = c.match(/\d+/g) || [125, 211, 252]; return '#' + m.slice(0, 3).map((x) => (+x).toString(16).padStart(2, '0')).join(''); };
-    const hex2rgb = (h) => { const n = parseInt(h.slice(1), 16); return [n >> 16 & 255, n >> 8 & 255, n & 255]; };
-    const lum = (h) => { const [r, g, b] = hex2rgb(h).map((v) => { v /= 255; return v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4); }); return 0.2126 * r + 0.7152 * g + 0.0722 * b; };
-    const contrast = (a, b) => { const l1 = lum(a), l2 = lum(b); return (Math.max(l1, l2) + 0.05) / (Math.min(l1, l2) + 0.05); };
-    const readableOn = (h) => (lum(h) > 0.4 ? '#04121f' : '#ffffff');
-    function shade(h, f) {
-      return '#' + hex2rgb(h).map(function (v) {
-        var n = f < 1 ? v * f : v + (255 - v) * (f - 1);
-        n = Math.max(0, Math.min(255, Math.round(n)));
-        return n.toString(16).padStart(2, '0');
-      }).join('');
-    }
-    function setColor(hex) {
-      $('#colPick').value = hex; $('#colHex').value = hex;
-      $('#colPreview').style.background = hex; $('#colPreview').style.color = readableOn(hex);
-      const cr = contrast(hex, '#0b1220');
-      $('#colContrast').innerHTML = 'Contrast vs dark bg: <b>' + cr.toFixed(1) + ':1</b> ' + (cr >= 4.5 ? '✅ AA' : '⚠️ low');
-      const shades = [0.7, 0.85, 1, 1.15, 1.3].map((f) => shade(hex, f));
-      $('#colSwatches').innerHTML = shades.map((s) => '<button class="btn btn-xs" style="background:' + s + ';border-color:' + s + '" data-sw="' + s + '" aria-label="' + s + '"></button>').join('');
-    }
-    function openColor(id) {
-      colBlockId = id; $('#colBlock').textContent = id;
-      const el = document.querySelector('[data-block="' + id + '"]');
-      setColor(el ? rgbToHex(getComputedStyle(el).backgroundColor) : '#7dd3fc');
-      $('#dlgColor').showModal();
-    }
-    $('#colPick')?.addEventListener('input', (e) => setColor(e.target.value));
-    $('#colHex')?.addEventListener('change', (e) => { if (/^#[0-9a-f]{6}$/i.test(e.target.value)) setColor(e.target.value); });
-    $('#colShades')?.addEventListener('click', () => setColor($('#colHex').value));
-    $('#colSwatches')?.addEventListener('click', (e) => { const s = e.target.closest('[data-sw]'); if (s) setColor(s.dataset.sw); });
-    $('#colApply')?.addEventListener('click', () => { const el = document.querySelector('[data-block="' + colBlockId + '"]'); if (el) el.style.background = $('#colHex').value; toast('Applied'); });
-    $('#colToComment')?.addEventListener('click', () => { cmColor = $('#colHex').value; cmBlockId = colBlockId; $('#dlgColor').close(); openComment(cmBlockId); });
     $$('[data-close]').forEach((b) => b.addEventListener('click', () => b.closest('dialog').close()));
 
-    // ---- collective copy ----
+    // ---- single copy-all ----
+    const promptFor = (id, note) => { const e = BLOCKMAP[id] || {}; return 'Block: ' + id + '\nFile: ' + (e.file || 'src') + ' lines ' + (e.start || '?') + '–' + (e.end || '?') + '\nNote: ' + (note || '(none)'); };
     $('#btnCopyAll')?.addEventListener('click', async () => {
       const d = await api('/api/comments').catch(() => ({}));
-      const c = d.comments || [];
+      const c = (d.comments || []).filter((x) => x.comment && !x.comment.startsWith('Block: '));
       if (!c.length) return toast('No comments yet');
-      navigator.clipboard.writeText(c.map((x) => promptFor(x.site_id, x.comment)).join('\n\n')).then(() => toast('Copied ' + c.length + ' comments'));
+      navigator.clipboard.writeText('Fix these dashboard elements:\n\n' + c.map((x) => promptFor(x.site_id, x.comment)).join('\n\n')).then(() => toast('Copied ' + c.length + ' comments'));
     });
 
-    // ===== BLOCK:VIEWS — daisyUI components only =====
+    // ---- colour panel ----
+    const CVARS = ['primary', 'secondary', 'accent', 'neutral', 'base-100', 'base-200', 'base-300', 'base-content'];
+    const rgbToHex = (c) => { const m = c.match(/\d+/g) || [0, 0, 0]; return '#' + m.slice(0, 3).map((x) => (+x).toString(16).padStart(2, '0')).join(''); };
+    function probeHex(cls) { const d = document.createElement('div'); d.className = cls; d.style.cssText = 'position:absolute;left:-9999px;top:0'; document.body.appendChild(d); const c = getComputedStyle(d).backgroundColor; d.remove(); return rgbToHex(c); }
+    const probeFor = { primary: 'btn btn-primary', secondary: 'btn btn-secondary', accent: 'btn btn-accent', neutral: 'btn btn-neutral', 'base-100': 'bg-base-100', 'base-200': 'bg-base-200', 'base-300': 'bg-base-300', 'base-content': 'text-base-content' };
+    function applyColor(n, v) { document.documentElement.style.setProperty('--color-' + n, v); }
+    function loadColors() { try { const o = JSON.parse(localStorage.getItem('nx_colors') || '{}'); for (const k in o) applyColor(k, o[k]); } catch {} }
+    function saveColors() { const o = {}; CVARS.forEach((n) => { const v = document.documentElement.style.getPropertyValue('--color-' + n); if (v) o[n] = v; }); localStorage.setItem('nx_colors', JSON.stringify(o)); api('/api/config', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ key: 'theme_colors', value: o }) }).catch(() => {}); }
+    function renderColorGrid() {
+      $('#colorGrid').innerHTML = CVARS.map((n) => {
+        const hex = document.documentElement.style.getPropertyValue('--color-' + n) || probeHex(probeFor[n]);
+        return '<label class="flex items-center gap-3 rounded-box border border-base-300 p-3"><input type="color" class="h-10 w-12 cursor-pointer rounded" data-cv="' + n + '" value="' + hex + '"><div><div class="text-sm font-semibold">' + n + '</div><div class="font-mono text-xs opacity-60">' + hex + '</div></div></label>';
+      }).join('');
+    }
+    function renderSwatches() { try { const s = JSON.parse(localStorage.getItem('nx_swatches') || '[]'); $('#swatchRow').innerHTML = s.map((h) => '<button class="btn btn-xs" style="background:' + h + ';border-color:' + h + '" data-sw="' + h + '" aria-label="' + h + '"></button>').join('') || '<span class="text-xs opacity-60">none yet</span>'; } catch {} }
+    $('#btnColors')?.addEventListener('click', () => { renderColorGrid(); renderSwatches(); $('#dlgColors').showModal(); });
+    $('#colorGrid')?.addEventListener('input', (e) => { const t = e.target.closest('[data-cv]'); if (!t) return; applyColor(t.dataset.cv, t.value); t.closest('label').querySelector('.font-mono').textContent = t.value; });
+    $('#swatchAdd')?.addEventListener('click', () => { const hex = $('#colorGrid input[data-cv="primary"]').value; let s = []; try { s = JSON.parse(localStorage.getItem('nx_swatches') || '[]'); } catch {} if (!s.includes(hex)) s.push(hex); localStorage.setItem('nx_swatches', JSON.stringify(s)); renderSwatches(); toast('Swatch added'); });
+    $('#swatchRow')?.addEventListener('click', (e) => { const b = e.target.closest('[data-sw]'); if (b) { applyColor('primary', b.dataset.sw); $('#colorGrid input[data-cv="primary"]').value = b.dataset.sw; } });
+    $('#colReset')?.addEventListener('click', () => { CVARS.forEach((n) => document.documentElement.style.removeProperty('--color-' + n)); localStorage.removeItem('nx_colors'); renderColorGrid(); toast('Reset to theme'); });
+    $('#colSave')?.addEventListener('click', () => { saveColors(); toast('Saved'); $('#dlgColors').close(); });
+
+    // ===== BLOCK:VIEWS — daisyUI components =====
     RENDER.overview = async () => {
       const d = await api('/api/overview').catch(() => ({}));
       const lim = d.limits || [];
-      const bar = (x) => { const p = x.percent_used ?? (x.used_today / x.daily_limit * 100); const cls = p > 85 ? 'progress-error' : p > 60 ? 'progress-warning' : 'progress-success'; return '<div class="mb-3" data-block="overview.limit-guard.' + x.resource_name + '"><div class="flex justify-between text-sm"><span>' + esc(x.resource_name) + '</span><span class="font-mono opacity-70">' + fmt(x.used_today) + ' / ' + fmt(x.daily_limit) + ' (' + Number(p).toFixed(2) + '%)</span></div><progress class="progress ' + cls + ' w-full" value="' + Math.min(100, p) + '" max="100"></progress></div>'; };
+      const bar = (x) => { const p = x.percent_used ?? (x.used_today / x.daily_limit * 100); const cls = p > 85 ? 'progress-error' : p > 60 ? 'progress-warning' : 'progress-success'; return '<div class="mb-3" data-block="overview.limit-guard.' + x.resource_name + '"><div class="flex justify-between text-sm"><span>' + esc(x.resource_name) + '</span><span class="font-mono opacity-60">' + fmt(x.used_today) + ' / ' + fmt(x.daily_limit) + ' (' + Number(p).toFixed(2) + '%)</span></div><progress class="progress ' + cls + ' w-full" value="' + Math.min(100, p) + '" max="100"></progress></div>'; };
       $('#view').innerHTML =
-        '<div class="stats stats-vertical w-full bg-base-200 shadow sm:stats-horizontal" data-block="overview.stats">' +
-        '<div class="stat"><div class="stat-title">Sites</div><div class="stat-value text-primary">' + fmt(d.total_sites) + '</div><div class="stat-desc">tracked</div></div>' +
-        '<div class="stat"><div class="stat-title">D1 Databases</div><div class="stat-value">' + fmt(d.d1_count) + '</div><div class="stat-desc">bound</div></div>' +
-        '<div class="stat"><div class="stat-title">KV Namespaces</div><div class="stat-value">' + fmt(d.kv_count) + '</div><div class="stat-desc">bound</div></div>' +
-        '<div class="stat"><div class="stat-title">Health</div><div class="stat-value text-success">' + esc(d.health_score || '—') + '</div><div class="stat-desc">uptime</div></div>' +
+        '<div class="stats stats-vertical w-full bg-base-200 shadow-sm sm:stats-horizontal" data-block="overview.stats">' +
+        '<div class="stat"><div class="stat-title">Sites</div><div class="stat-value text-primary">' + fmt(d.total_sites) + '</div></div>' +
+        '<div class="stat"><div class="stat-title">D1 Databases</div><div class="stat-value">' + fmt(d.d1_count) + '</div></div>' +
+        '<div class="stat"><div class="stat-title">KV Namespaces</div><div class="stat-value">' + fmt(d.kv_count) + '</div></div>' +
+        '<div class="stat"><div class="stat-title">Health</div><div class="stat-value text-success">' + esc(d.health_score || '—') + '</div></div>' +
         '</div>' +
-        '<div class="card mt-4 bg-base-200 shadow" data-block="overview.limit-guard"><div class="card-body"><h2 class="card-title">🛡️ Limit Guard</h2>' + lim.map(bar).join('') + '</div></div>' +
-        '<div class="card mt-4 bg-base-200 shadow" data-block="overview.recommendations"><div class="card-body"><h2 class="card-title">💡 Recommendations</h2><div id="recList" class="flex flex-col gap-2"><span class="loading loading-spinner"></span></div></div></div>';
-      api('/api/recommendations').then((r) => { const recs = r.recommendations || []; $('#recList').innerHTML = recs.length ? recs.map((x) => '<div class="flex items-start justify-between gap-2 border-b border-base-300 pb-2"><div><b>' + esc(x.site_id || x.type) + '</b><div class="text-sm opacity-80">' + esc(x.message) + '</div></div><span class="badge badge-warning badge-sm">' + esc(x.severity) + '</span></div>').join('') : '<span class="opacity-70">None open.</span>'; });
+        '<div class="card mt-4 bg-base-200 shadow-sm" data-block="overview.limit-guard"><div class="card-body"><h2 class="card-title">🛡️ Limit Guard</h2>' + lim.map(bar).join('') + '</div></div>' +
+        '<div class="card mt-4 bg-base-200 shadow-sm" data-block="overview.recommendations"><div class="card-body"><h2 class="card-title">💡 Recommendations</h2><div id="recList"><span class="loading loading-spinner"></span></div></div></div>';
+      api('/api/recommendations').then((r) => { const recs = r.recommendations || []; $('#recList').innerHTML = recs.length ? recs.map((x) => '<div class="flex items-start justify-between gap-2 border-b border-base-300 pb-2"><div><b>' + esc(x.site_id || x.type) + '</b><div class="text-sm opacity-70">' + esc(x.message) + '</div></div><span class="badge badge-warning badge-sm">' + esc(x.severity) + '</span></div>').join('') : '<span class="opacity-70">None open.</span>'; });
     };
     RENDER.sites = async () => {
       const d = await api('/api/sites').catch(() => []); const sites = d.sites || d || [];
-      $('#view').innerHTML = '<div class="card bg-base-200 shadow" data-block="sites.table"><div class="card-body"><h2 class="card-title">🌐 Sites &amp; Stacks</h2><div class="overflow-x-auto"><table class="table"><thead><tr><th>Site</th><th>Type</th><th>Stack</th><th>Status</th></tr></thead><tbody>' +
-        sites.map((s) => '<tr data-block="sites.table.' + esc(s.id || s.name) + '"><td><b>' + esc(s.name || s.id) + '</b><div class="font-mono text-xs opacity-60">' + esc(s.subdomain || '') + '</div></td><td>' + esc(s.type) + '</td><td>' + (Array.isArray(s.stack) ? s.stack : []).map((x) => '<span class="badge badge-sm badge-outline mr-1">' + esc(x) + '</span>').join('') + '</td><td><span class="badge badge-success badge-sm">' + esc(s.status || 'active') + '</span></td></tr>').join('') + '</tbody></table></div></div></div>';
+      $('#view').innerHTML = '<div class="card bg-base-200 shadow-sm" data-block="sites.table"><div class="card-body"><h2 class="card-title">🌐 Sites &amp; Stacks</h2><div class="overflow-x-auto"><table class="table"><thead><tr><th>Site</th><th>Type</th><th>Stack</th><th>Status</th></tr></thead><tbody>' +
+        sites.map((s) => '<tr data-block="sites.table.' + esc(s.id || s.name) + '"><td><b>' + esc(s.name || s.id) + '</b><div class="font-mono text-xs opacity-50">' + esc(s.subdomain || '') + '</div></td><td>' + esc(s.type) + '</td><td>' + (Array.isArray(s.stack) ? s.stack : []).map((x) => '<span class="badge badge-sm badge-outline mr-1">' + esc(x) + '</span>').join('') + '</td><td><span class="badge badge-success badge-sm">' + esc(s.status || 'active') + '</span></td></tr>').join('') + '</tbody></table></div></div></div>';
     };
     RENDER.comments = async () => {
-      const d = await api('/api/comments').catch(() => ({})); const c = d.comments || [];
-      $('#view').innerHTML = '<div class="card bg-base-200 shadow" data-block="comments.list"><div class="card-body"><h2 class="card-title">💬 All comments <span class="badge badge-sm">' + c.length + '</span></h2>' +
-        (c.length ? '<ul class="flex flex-col gap-2">' + c.map((x) => '<li class="border-b border-base-300 pb-2"><span class="font-mono text-xs opacity-70">' + esc(x.site_id || 'general') + '</span><div>' + esc(x.comment) + '</div></li>').join('') + '</ul>' : '<p class="opacity-70">No comments yet — every element has a 💬 button.</p>') + '</div></div>';
+      const d = await api('/api/comments').catch(() => ({})); const c = (d.comments || []).filter((x) => !String(x.comment || '').startsWith('Block: '));
+      $('#view').innerHTML = '<div class="card bg-base-200 shadow-sm" data-block="comments.list"><div class="card-body"><h2 class="card-title">💬 Comments <span class="badge badge-sm">' + c.length + '</span></h2>' + (c.length ? '<ul class="flex flex-col gap-2">' + c.map((x) => '<li class="border-b border-base-300 pb-2"><span class="font-mono text-xs opacity-60">' + esc(x.site_id || 'general') + '</span><div>' + esc(x.comment) + '</div></li>').join('') + '</ul>' : '<p class="opacity-70">No comments yet — every block has a corner 💬.</p>') + '</div></div>';
     };
-    RENDER.d1 = async () => {
-      $('#view').innerHTML = '<div class="card bg-base-200 shadow" data-block="d1.explorer"><div class="card-body"><h2 class="card-title">💾 D1 Databases</h2><div class="flex flex-wrap gap-2"><select id="dbSel" class="select select-bordered">' + ['CMS_DB','SEO_DB','MAPS_DB','PINCODE_DB','EXAM_DB','EXAM_APAC','SKMTOOLS_DB'].map((x) => '<option>' + x + '</option>').join('') + '</select><button class="btn btn-sm" id="d1Tables">List tables</button></div><div id="d1Out" class="mt-3 flex flex-wrap gap-2"></div></div></div>';
-      $('#d1Tables').addEventListener('click', async () => { const r = await api('/api/d1_tables?db=' + $('#dbSel').value).catch(() => ({ error: 'failed' })); $('#d1Out').innerHTML = r.error ? '<span class="badge badge-error">' + esc(r.error) + '</span>' : (r.tables || []).map((t) => '<span class="badge badge-outline">' + esc(t) + '</span>').join(''); });
-    };
-    RENDER.kv = async () => { $('#view').innerHTML = '<div class="card bg-base-200 shadow" data-block="kv.browser"><div class="card-body"><h2 class="card-title">⚡ KV Namespaces</h2><select id="kvSel" class="select select-bordered">' + ['NEXUS_CACHE','SESSION','MAPS_ADS','MAPS_ADS2'].map((x) => '<option>' + x + '</option>').join('') + '</select><pre id="kvOut" class="mt-3 max-h-96 overflow-auto text-xs">—</pre></div></div>'; };
-    RENDER.crons = async () => { const d = await api('/api/crons').catch(() => ({})); $('#view').innerHTML = '<div class="card bg-base-200 shadow" data-block="crons.list"><div class="card-body"><h2 class="card-title">⏰ Crons</h2><table class="table"><thead><tr><th>Job</th><th>Schedule</th></tr></thead><tbody>' + (d.crons || []).map((c) => '<tr><td>' + esc(c.name) + '</td><td class="font-mono">' + esc(c.spec) + '</td></tr>').join('') + '</tbody></table></div></div>'; };
-    RENDER.github = async () => { const d = await api('/api/github_runs').catch(() => ({})); $('#view').innerHTML = '<div class="card bg-base-200 shadow" data-block="github.runs"><div class="card-body"><h2 class="card-title">🐙 GitHub Runs</h2>' + (d.error ? '<div class="alert alert-warning">' + esc(d.error) + '</div>' : '<table class="table"><tbody>' + (d.runs || []).map((r) => '<tr><td><a class="link link-primary" href="' + esc(r.url) + '">' + esc(r.name) + '</a></td><td><span class="badge ' + (r.conclusion === 'success' ? 'badge-success' : 'badge-error') + ' badge-sm">' + esc(r.conclusion || r.status) + '</span></td></tr>').join('') + '</tbody></table>') + '</div></div>'; };
-    RENDER.domains = async () => { $('#view').innerHTML = '<div class="card bg-base-200 shadow" data-block="domains.checker"><div class="card-body"><h2 class="card-title">🔎 Domain Checker</h2><div class="join w-full"><input id="domBox" class="input input-bordered join-item" placeholder="example.com"><button class="btn btn-primary join-item" id="domGo">Check</button></div><pre id="domOut" class="mt-3 max-h-80 overflow-auto text-xs">—</pre></div></div>'; $('#domGo').addEventListener('click', async () => { $('#domOut').textContent = JSON.stringify(await api('/api/domain_check?domain=' + encodeURIComponent($('#domBox').value)), null, 2); }); };
-    RENDER.config = async () => { const d = await api('/api/config').catch(() => ({})); $('#view').innerHTML = '<div class="card bg-base-200 shadow" data-block="config.settings"><div class="card-body"><h2 class="card-title">⚙️ Config</h2><pre class="text-xs">' + esc(JSON.stringify(d.settings || [], null, 2)) + '</pre></div></div>'; };
+    RENDER.d1 = async () => { $('#view').innerHTML = '<div class="card bg-base-200 shadow-sm" data-block="d1.explorer"><div class="card-body"><h2 class="card-title">💾 D1 Databases</h2><div class="flex flex-wrap gap-2"><select id="dbSel" class="select select-bordered">' + ['CMS_DB','SEO_DB','MAPS_DB','PINCODE_DB','EXAM_DB','EXAM_APAC','SKMTOOLS_DB'].map((x) => '<option>' + x + '</option>').join('') + '</select><button class="btn btn-sm btn-primary" id="d1Tables">List tables</button></div><div id="d1Out" class="mt-3 flex flex-wrap gap-2"></div></div></div>'; $('#d1Tables').addEventListener('click', async () => { const r = await api('/api/d1_tables?db=' + $('#dbSel').value).catch(() => ({ error: 'failed' })); $('#d1Out').innerHTML = r.error ? '<span class="badge badge-error">' + esc(r.error) + '</span>' : (r.tables || []).map((t) => '<span class="badge badge-outline">' + esc(t) + '</span>').join(''); }); };
+    RENDER.kv = async () => { $('#view').innerHTML = '<div class="card bg-base-200 shadow-sm" data-block="kv.browser"><div class="card-body"><h2 class="card-title">⚡ KV Namespaces</h2><select id="kvSel" class="select select-bordered">' + ['NEXUS_CACHE','SESSION','MAPS_ADS','MAPS_ADS2'].map((x) => '<option>' + x + '</option>').join('') + '</select><pre id="kvOut" class="mt-3 max-h-96 overflow-auto text-xs">—</pre></div></div>'; };
+    RENDER.crons = async () => { const d = await api('/api/crons').catch(() => ({})); $('#view').innerHTML = '<div class="card bg-base-200 shadow-sm" data-block="crons.list"><div class="card-body"><h2 class="card-title">⏰ Crons</h2><table class="table"><thead><tr><th>Job</th><th>Schedule</th></tr></thead><tbody>' + (d.crons || []).map((c) => '<tr><td>' + esc(c.name) + '</td><td class="font-mono">' + esc(c.spec) + '</td></tr>').join('') + '</tbody></table></div></div>'; };
+    RENDER.github = async () => { const d = await api('/api/github_runs').catch(() => ({})); $('#view').innerHTML = '<div class="card bg-base-200 shadow-sm" data-block="github.runs"><div class="card-body"><h2 class="card-title">🐙 GitHub Runs</h2>' + (d.error ? '<div class="alert alert-warning">' + esc(d.error) + '</div>' : '<table class="table"><tbody>' + (d.runs || []).map((r) => '<tr><td><a class="link link-primary" href="' + esc(r.url) + '">' + esc(r.name) + '</a></td><td><span class="badge ' + (r.conclusion === 'success' ? 'badge-success' : 'badge-error') + ' badge-sm">' + esc(r.conclusion || r.status) + '</span></td></tr>').join('') + '</tbody></table>') + '</div></div>'; };
+    RENDER.domains = async () => { $('#view').innerHTML = '<div class="card bg-base-200 shadow-sm" data-block="domains.checker"><div class="card-body"><h2 class="card-title">🔎 Domain Checker</h2><div class="join w-full"><input id="domBox" class="input input-bordered join-item" placeholder="example.com"><button class="btn btn-primary join-item" id="domGo">Check</button></div><pre id="domOut" class="mt-3 max-h-80 overflow-auto text-xs">—</pre></div></div>'; $('#domGo').addEventListener('click', async () => { $('#domOut').textContent = JSON.stringify(await api('/api/domain_check?domain=' + encodeURIComponent($('#domBox').value)), null, 2); }); };
+    RENDER.config = async () => { const d = await api('/api/config').catch(() => ({})); $('#view').innerHTML = '<div class="card bg-base-200 shadow-sm" data-block="config.settings"><div class="card-body"><h2 class="card-title">⚙️ Config</h2><pre class="text-xs">' + esc(JSON.stringify(d.settings || [], null, 2)) + '</pre></div></div>'; };
 
     $('#btnSync')?.addEventListener('click', () => { toast('Scanning…'); api('/api/sync_resources').then(() => toast('Synced')); });
+    loadColors();
     if ('serviceWorker' in navigator) navigator.serviceWorker.register('/sw.js').catch(() => {});
     (() => { const h = location.hash.replace('#', '') || 'overview'; show(TITLES[h] ? h : 'overview'); decorate(_view); })();
   </script>
