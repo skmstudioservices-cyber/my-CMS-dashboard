@@ -17,16 +17,26 @@ const { title = 'Nexus CMS — Control Center', active = 'overview', crumb = ['M
   <meta name="theme-color" content="#2563eb" />
   <link rel="manifest" href="/manifest.webmanifest" />
 </head>
-<body class="bg-base-200 text-base-content antialiased">
-  <div class="min-h-screen grid lg:grid-cols-[248px_minmax(0,1fr)]">
+<body class="bg-base-200 text-base-content antialiased overflow-x-hidden">
+  <div class="min-h-screen lg:grid lg:grid-cols-[248px_minmax(0,1fr)]">
     <Sidebar active={active} />
+    <div id="navBackdrop" class="fixed inset-0 z-30 bg-black/50 hidden lg:hidden"></div>
     <div class="min-w-0 flex flex-col">
       <Topbar crumb={crumb} />
-      <main class="p-4 sm:p-8 w-full max-w-[1200px] mx-auto">
+      <main class="p-4 sm:p-8 w-full max-w-[1200px] mx-auto min-w-0">
         <slot />
       </main>
     </div>
   </div>
   <Feedback />
+  <script>
+    const toggle = document.getElementById('navToggle');
+    const side = document.getElementById('sidebar');
+    const back = document.getElementById('navBackdrop');
+    const closeNav = () => { side?.classList.add('-translate-x-full'); back?.classList.add('hidden'); };
+    toggle?.addEventListener('click', () => { side?.classList.remove('-translate-x-full'); back?.classList.remove('hidden'); });
+    back?.addEventListener('click', closeNav);
+    document.querySelectorAll('#sidebar a').forEach((a) => a.addEventListener('click', closeNav));
+  </script>
 </body>
 </html>

@@ -22,8 +22,9 @@ const groups = [
   ]},
 ];
 ---
-<!-- BLOCK:SIDEBAR — explicit hex colours so contrast can never break on the dark panel -->
-<aside data-theme="skmside" class="hidden lg:flex flex-col gap-0.5 p-4 bg-[#0f172a] text-[#e6ebf3] border-r border-[#243146] overflow-y-auto">
+<!-- BLOCK:SIDEBAR — drawer on mobile, static on desktop -->
+<aside id="sidebar" data-theme="skmside"
+  class="fixed inset-y-0 left-0 z-40 w-[248px] -translate-x-full lg:translate-x-0 lg:static lg:z-auto flex flex-col gap-0.5 p-4 bg-[#0f172a] text-[#e6ebf3] border-r border-[#243146] overflow-y-auto transition-transform duration-200">
   <div class="px-3 pb-6 text-lg font-extrabold tracking-tight text-white">◈ Nexus CMS</div>
   {groups.map((g) => (
     <>
