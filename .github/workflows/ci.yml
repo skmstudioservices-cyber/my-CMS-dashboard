@@ -1,0 +1,37 @@
+name: Build check
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: .node-version
+
+      - name: Install dependencies
+        run: npm install --no-audit --no-fund
+
+      - name: Build Astro
+        run: npm run build
+
+      - name: Verify generated dashboard pages
+        run: |
+          test -f dist/index.html
+          test -f dist/cloudflare/index.html
+          test -f dist/github/index.html
+          test -f dist/phase-0/index.html
+          test -f functions/api/cf.ts

@@ -1,11 +1,10 @@
-// Astro + Cloudflare adapter. Tailwind v4 + daisyUI run as a Vite plugin.
+// Astro 7 static build for GitHub-connected Cloudflare Pages.
+// Dynamic endpoints live in the Pages Functions directory (/functions).
 import { defineConfig } from 'astro/config';
-import cloudflare from '@astrojs/cloudflare';
 import tailwindcss from '@tailwindcss/vite';
 
 export default defineConfig({
-  output: 'server',
-  adapter: cloudflare({ platformProxy: { enabled: true } }),
+  output: 'static',
   vite: {
     plugins: [tailwindcss()],
   },
