@@ -1,13 +1,13 @@
 ---
 import Base from '../layouts/Base.astro';
 ---
-<Base title="Nexus CMS — Control Center" active="overview" crumb={['Mission Control', 'Overview']}>
+<Base title="Nexus CMS — Control Center" active="overview" crumb={['Mission Control', 'Dashboard']}>
   <div class="flex flex-wrap items-start justify-between gap-4 mb-6">
     <div>
-      <h1 class="text-2xl font-bold tracking-tight m-0 mb-1">SKM Mission Control</h1>
+      <h1 class="text-2xl font-bold tracking-tight m-0 mb-1">📊 Dashboard</h1>
       <p class="text-sm opacity-60 m-0">One place to check your sites, databases and Cloudflare resources.</p>
     </div>
-    <button id="reloadSnapshot" class="btn btn-outline btn-sm" type="button">↻ Reload snapshot</button>
+    <button id="reloadSnapshot" class="btn btn-outline btn-sm" type="button">↻ Reload saved snapshot</button>
   </div>
 
   <div class="flex gap-2 overflow-x-auto pb-2 mb-4" role="tablist" aria-label="Dashboard sections">
