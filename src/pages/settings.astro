@@ -138,11 +138,13 @@ import Panel from '../components/Panel.astro';
       const values = current();
       localStorage.setItem(key, JSON.stringify(values));
       apply(values);
+      window.dispatchEvent(new CustomEvent('nexus:preferences-updated', { detail: JSON.stringify(values) }));
       if (status) status.textContent = '✅ Preferences saved on this device.';
     });
     document.getElementById('resetPreferences')?.addEventListener('click', () => {
       const defaults = {font:'system',size:'15',spacing:'1.65',accent:'#2563eb'};
       syncControls(defaults); apply(defaults); localStorage.removeItem(key);
+      window.dispatchEvent(new CustomEvent('nexus:preferences-updated', { detail: JSON.stringify(defaults) }));
       if (status) status.textContent = 'Preferences reset.';
     });
   </script>
