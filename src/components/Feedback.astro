@@ -1,24 +1,72 @@
 ---
 ---
-<!-- BLOCK:FEEDBACK — global feedback drawer + copy-as-prompt export -->
+<!-- Global feedback panel with privacy-conscious on-screen target selection. -->
 <dialog id="feedbackDialog" class="modal">
-  <div class="modal-box max-w-2xl p-0">
+  <div class="modal-box max-w-3xl p-0 max-h-[92vh]">
     <div class="flex items-start justify-between gap-3 p-5 border-b border-base-300">
       <div>
-        <strong class="text-base">Global feedback</strong>
-        <div class="text-xs opacity-60">Name the tab, section, button, or change in your own words.</div>
+        <strong class="text-base">🗣️ Feedback & screen selector</strong>
+        <div class="text-xs opacity-60">Describe a change or select the exact part of the interface it refers to.</div>
       </div>
       <button class="btn btn-sm btn-ghost" id="closeFeedback" type="button" aria-label="Close feedback">✕</button>
     </div>
-    <div class="p-5">
+    <div class="p-5 overflow-y-auto">
+      <div class="rounded-xl border border-base-300 p-4 mb-4">
+        <div class="font-semibold text-sm mb-1">🎯 Select an area on the screen</div>
+        <p class="text-xs opacity-70 mb-3">The selector records page URL, element labels and position/size—not a screenshot, passwords, or form values.</p>
+        <div class="grid sm:grid-cols-3 gap-3">
+          <label class="grid gap-1 text-sm">Selection shape
+            <select id="targetShape" class="select select-bordered select-sm w-full">
+              <option value="point">📍 Point / element</option>
+              <option value="rectangle">▭ Rectangle</option>
+              <option value="ellipse">◯ Ellipse / circle</option>
+            </select>
+          </label>
+          <label class="grid gap-1 text-sm">Preset size
+            <select id="targetSize" class="select select-bordered select-sm w-full">
+              <option value="small">Small</option>
+              <option value="medium" selected>Medium</option>
+              <option value="large">Large</option>
+              <option value="custom">Custom — drag to size</option>
+            </select>
+          </label>
+          <label class="grid gap-1 text-sm">Selection purpose
+            <select id="targetPurpose" class="select select-bordered select-sm w-full">
+              <option>UI feedback</option>
+              <option>Accessibility / readability</option>
+              <option>Layout / spacing</option>
+              <option>Bug / incorrect behavior</option>
+              <option>Feature idea</option>
+              <option>Responsive / mobile issue</option>
+            </select>
+          </label>
+        </div>
+        <div class="flex flex-wrap gap-2 mt-3">
+          <button id="startTargetSelection" class="btn btn-primary btn-sm" type="button">🎯 Select on screen</button>
+          <button id="clearTargetSelection" class="btn btn-outline btn-sm" type="button">Clear selection</button>
+          <span id="targetStatus" class="text-xs opacity-70 self-center" role="status" aria-live="polite">No screen area selected.</span>
+        </div>
+        <div id="targetSummary" class="text-xs mt-3 hidden rounded-lg bg-base-200 p-3"></div>
+      </div>
+
       <label class="block text-sm font-semibold mb-2" for="feedbackText">Your feedback</label>
-      <textarea id="feedbackText" class="textarea textarea-bordered w-full min-h-28" placeholder="Example: On the Sites & Stacks tab, make the status column easier to scan. Or simply describe what you want changed."></textarea>
+      <textarea id="feedbackText" class="textarea textarea-bordered w-full min-h-24" placeholder="Example: Make this card wider, increase contrast, or let me open its details without leaving the dashboard."></textarea>
       <div class="flex flex-wrap items-center gap-2 mt-3">
-        <button class="btn btn-sm btn-outline" id="voiceBtn" type="button">🎙 Start voice input</button>
+        <button class="btn btn-sm btn-outline" id="voiceBtn" type="button">🎙️ Start voice input</button>
         <button class="btn btn-sm btn-outline" id="stopVoiceBtn" type="button" disabled>Stop dictation</button>
         <span class="text-xs opacity-60" id="voiceStatus" role="status">Typing is always available.</span>
       </div>
-      <button class="btn btn-primary btn-sm mt-4" id="addFeedback" type="button">Add feedback note</button>
+      <div class="mt-3 flex flex-wrap items-center gap-3">
+        <label class="grid gap-1 text-sm">Priority
+          <select id="feedbackPriority" class="select select-bordered select-sm">
+            <option>Normal</option><option>High</option><option>Critical</option><option>Idea / later</option>
+          </select>
+        </label>
+        <label class="grid gap-1 text-sm">Area name (optional)
+          <input id="targetLabel" class="input input-bordered input-sm" placeholder="e.g. traffic chart" maxlength="100" />
+        </label>
+      </div>
+      <button class="btn btn-primary btn-sm mt-4" id="addFeedback" type="button">➕ Add feedback note</button>
       <div class="flex items-center justify-between mt-6 mb-2">
         <strong class="text-sm">Collected notes</strong>
         <span class="text-xs opacity-60" id="noteCount">0 notes</span>
@@ -26,16 +74,22 @@
       <div class="grid gap-2" id="notesList"><div class="text-sm opacity-50 border border-dashed border-base-300 rounded-lg p-4 text-center">Your notes will appear here.</div></div>
     </div>
     <div class="flex flex-wrap items-center justify-between gap-3 p-4 border-t border-base-300 bg-base-200">
-      <span class="text-xs opacity-60">Notes are saved in this browser only.</span>
+      <span class="text-xs opacity-60">Saved in this browser only; no screenshot is uploaded.</span>
       <div class="flex gap-2">
         <button class="btn btn-sm btn-ghost" id="clearFeedback" type="button">Clear all</button>
-        <button class="btn btn-sm btn-primary" id="copyFeedback" type="button">Copy all as prompt</button>
+        <button class="btn btn-sm btn-primary" id="copyFeedback" type="button">📋 Copy feedback prompt</button>
       </div>
     </div>
   </div>
   <form method="dialog" class="modal-backdrop"><button>close</button></form>
 </dialog>
-<div id="toast" class="fixed bottom-4 right-4 bg-neutral text-neutral-content px-4 py-2.5 rounded-lg text-sm shadow-lg z-50" hidden></div>
+<div id="selectionOverlay" class="fixed inset-0 z-[100] hidden" aria-hidden="true" style="cursor:crosshair;touch-action:none">
+  <div id="selectionRect" class="absolute border-2 border-primary bg-primary/10 hidden pointer-events-none"></div>
+  <div class="absolute top-3 left-1/2 -translate-x-1/2 rounded-xl bg-neutral text-neutral-content px-4 py-3 shadow-xl text-sm max-w-[92vw]">
+    🎯 Drag to mark an area. For a point, click an element. Press Esc to cancel.
+  </div>
+</div>
+<div id="toast" class="fixed bottom-4 right-4 bg-neutral text-neutral-content px-4 py-2.5 rounded-lg text-sm shadow-lg z-[110]" hidden></div>
 
 <script>
   const $ = (s: string) => document.querySelector(s) as any;
@@ -45,41 +99,168 @@
   const storeKey = 'nexus-phase0-feedback';
   let notes: any[] = [];
   try { notes = JSON.parse(localStorage.getItem(storeKey) || '[]'); if (!Array.isArray(notes)) notes = []; } catch { notes = []; }
-  let recognition: any = null, isListening = false, toastTimer: any;
-  function toast(m: string) { const el = $('#toast'); el.textContent = m; el.hidden = false; clearTimeout(toastTimer); toastTimer = setTimeout(() => el.hidden = true, 2600); }
-  function save() { try { localStorage.setItem(storeKey, JSON.stringify(notes)); } catch { toast('Browser storage unavailable. Copy your notes before leaving.'); } render(); }
+  let recognition: any = null, toastTimer: any;
+  let selectedTarget: any = null;
+  let selectionActive = false;
+  let dragStart: {x:number;y:number}|null = null;
+  try { selectedTarget = JSON.parse(sessionStorage.getItem('nexus-feedback-target') || 'null'); } catch { selectedTarget = null; }
+
+  function toast(m: string) { const el = $('#toast'); el.textContent = m; el.hidden = false; clearTimeout(toastTimer); toastTimer = setTimeout(() => el.hidden = true, 2800); }
+  function safeElementText(el: Element) {
+    if (el instanceof HTMLInputElement || el instanceof HTMLTextAreaElement || el instanceof HTMLSelectElement || el.closest('input,textarea,select,[contenteditable="true"]')) return '[form control — value not collected]';
+    return (el.getAttribute('aria-label') || el.getAttribute('title') || el.textContent || '').replace(/\s+/g, ' ').trim().slice(0, 180);
+  }
+  function elementInfo(el: Element | null) {
+    if (!el) return null;
+    const rect = el.getBoundingClientRect();
+    const classes = Array.from(el.classList).filter(c => c.length < 50).slice(0, 6);
+    return {
+      tag: el.tagName.toLowerCase(),
+      id: el.id || null,
+      role: el.getAttribute('role'),
+      ariaLabel: el.getAttribute('aria-label'),
+      label: safeElementText(el),
+      classes,
+      bounds: {x:Math.round(rect.x), y:Math.round(rect.y), width:Math.round(rect.width), height:Math.round(rect.height)},
+      selectorHint: el.id ? '#' + el.id : el.tagName.toLowerCase() + (classes.length ? '.' + classes.join('.') : '')
+    };
+  }
+  function currentTargetSummary() {
+    const el = $('#targetSummary');
+    const status = $('#targetStatus');
+    if (!selectedTarget) { el.classList.add('hidden'); status.textContent = 'No screen area selected.'; return; }
+    el.classList.remove('hidden');
+    status.textContent = 'Area selected ✓';
+    el.textContent = selectedTarget.shape + ' · ' + selectedTarget.purpose + ' · ' + selectedTarget.bounds.width + '×' + selectedTarget.bounds.height + ' px · ' + (selectedTarget.element?.label || selectedTarget.element?.tag || 'screen area');
+  }
+  function save() {
+    try { localStorage.setItem(storeKey, JSON.stringify(notes)); }
+    catch { toast('Browser storage unavailable. Copy your notes before leaving.'); }
+    render();
+  }
   function render() {
     $('#noteCount').textContent = notes.length + (notes.length === 1 ? ' note' : ' notes');
     list.replaceChildren();
     if (!notes.length) { const e = document.createElement('div'); e.className = 'text-sm opacity-50 border border-dashed border-base-300 rounded-lg p-4 text-center'; e.textContent = 'Your notes will appear here.'; list.append(e); return; }
     notes.forEach((note, i) => {
       const item = document.createElement('div'); item.className = 'border border-base-300 rounded-lg p-3 flex items-start justify-between gap-3 text-sm';
-      const t = document.createElement('div'); t.textContent = (i + 1) + '. ' + note.text;
+      const t = document.createElement('div'); t.textContent = (i + 1) + '. [' + note.priority + '] ' + note.text + (note.target ? ' — target: ' + (note.target.label || note.target.element?.label || note.target.element?.tag || note.target.shape) : '');
       const r = document.createElement('button'); r.className = 'text-error text-xs shrink-0'; r.textContent = 'Remove'; r.setAttribute('aria-label', 'Remove note ' + (i + 1));
       r.addEventListener('click', () => { notes.splice(i, 1); save(); });
       item.append(t, r); list.append(item);
     });
   }
-  $('#openFeedback')?.addEventListener('click', () => dialog.showModal());
-  $('#closeFeedback').addEventListener('click', () => dialog.close());
-  $('#addFeedback').addEventListener('click', () => { const text = input.value.trim(); if (!text) { input.focus(); toast('Write or dictate a note first.'); return; } notes.push({ text, createdAt: new Date().toISOString() }); input.value = ''; save(); input.focus(); toast('Feedback note added.'); });
-  $('#clearFeedback').addEventListener('click', () => { if (!notes.length) return; notes = []; save(); toast('All notes cleared.'); });
+  $('#openFeedback')?.addEventListener('click', () => { dialog.showModal(); currentTargetSummary(); });
+  $('#closeFeedback').addEventListener('click', () => { stopSelection(); dialog.close(); });
+  $('#addFeedback').addEventListener('click', () => {
+    const text = input.value.trim();
+    if (!text) { input.focus(); toast('Write or dictate a note first.'); return; }
+    notes.push({text, priority:$('#feedbackPriority').value, target:selectedTarget ? {...selectedTarget, label:$('#targetLabel').value.trim() || selectedTarget.label || ''} : null, createdAt:new Date().toISOString()});
+    input.value = ''; selectedTarget = null; sessionStorage.removeItem('nexus-feedback-target'); currentTargetSummary(); save(); input.focus(); toast('Feedback note added.');
+  });
+  $('#clearFeedback').addEventListener('click', () => { if (!notes.length) return; if (!confirm('Clear all locally saved feedback notes?')) return; notes = []; save(); toast('All notes cleared.'); });
+  $('#clearTargetSelection').addEventListener('click', () => { selectedTarget = null; sessionStorage.removeItem('nexus-feedback-target'); currentTargetSummary(); });
   $('#copyFeedback').addEventListener('click', async () => {
     if (!notes.length) { toast('Add at least one note first.'); return; }
-    const out = ['Please apply the following feedback to the Nexus CMS control center:', '', ...notes.map((n, i) => (i + 1) + '. ' + n.text), '', 'Preserve each note’s wording. Use the named tab, section, button, or control as the target; if a location is unclear, ask only if it blocks implementation.'].join('\n');
-    try { await navigator.clipboard.writeText(out); toast('All feedback copied as one prompt.'); }
-    catch { input.value = out; input.focus(); input.select(); toast('Clipboard blocked; export text is selected to copy manually.'); }
+    const out = [
+      'Please apply the following feedback to the Nexus CMS control center:',
+      '',
+      ...notes.map((n, i) => {
+        const t = n.target;
+        const where = t ? 'Location: ' + location.origin + t.route + ' | ' + t.shape + ' selection at x=' + t.bounds.x + ', y=' + t.bounds.y + ', width=' + t.bounds.width + ', height=' + t.bounds.height + ' | purpose: ' + t.purpose + (t.label ? ' | user label: ' + t.label : '') + (t.element ? ' | element: ' + JSON.stringify(t.element) : '') : 'Location: ' + location.pathname;
+        return (i + 1) + '. Priority: ' + n.priority + '\n   ' + where + '\n   Feedback: ' + n.text + '\n   Captured: ' + n.createdAt;
+      }),
+      '',
+      'Use element labels and bounds to locate the UI. Coordinates are viewport-relative and can change with scrolling/resizing. Preserve the user’s wording. Never assume the selector metadata is sufficient to infer intent.'
+    ].join('\n');
+    try { await navigator.clipboard.writeText(out); toast('Feedback prompt copied with screen-target details.'); }
+    catch { input.value = out; input.focus(); input.select(); toast('Clipboard blocked; export text selected to copy manually.'); }
   });
-  function setVoiceState(m: string, listening = false) { $('#voiceStatus').textContent = m; $('#voiceBtn').disabled = listening; $('#stopVoiceBtn').disabled = !listening; }
+
+  function startSelection() {
+    if (selectionActive) return;
+    selectionActive = true;
+    dialog.close();
+    const overlay = $('#selectionOverlay'); overlay.classList.remove('hidden');
+    document.body.style.overflow = 'hidden';
+    $('#targetStatus').textContent = 'Select an area on the page…';
+  }
+  function stopSelection() {
+    selectionActive = false; dragStart = null;
+    $('#selectionOverlay').classList.add('hidden');
+    $('#selectionRect').classList.add('hidden');
+    document.body.style.overflow = '';
+  }
+  function captureTarget(x:number,y:number,w:number,h:number) {
+    const shape = $('#targetShape').value;
+    const cx = x + w/2, cy = y + h/2;
+    const el = document.elementFromPoint(Math.max(0, Math.min(innerWidth-1, cx)), Math.max(0, Math.min(innerHeight-1, cy)));
+    const target = {
+      route: location.pathname + location.search,
+      pageTitle: document.title,
+      viewport: {width:innerWidth,height:innerHeight,devicePixelRatio:window.devicePixelRatio},
+      shape,
+      purpose: $('#targetPurpose').value,
+      bounds: {x:Math.round(x),y:Math.round(y),width:Math.round(w),height:Math.round(h)},
+      element: elementInfo(el),
+      capturedAt: new Date().toISOString()
+    };
+    selectedTarget = target;
+    try { sessionStorage.setItem('nexus-feedback-target', JSON.stringify(target)); } catch {}
+    stopSelection();
+    dialog.showModal();
+    currentTargetSummary();
+    toast('Screen target captured. Add your feedback note.');
+  }
+  $('#startTargetSelection').addEventListener('click', startSelection);
+  const overlay = $('#selectionOverlay'), selectionRect = $('#selectionRect');
+  overlay.addEventListener('pointerdown', (event:any) => {
+    if (!selectionActive) return;
+    event.preventDefault();
+    dragStart = {x:event.clientX,y:event.clientY};
+    selectionRect.style.left = event.clientX + 'px'; selectionRect.style.top = event.clientY + 'px';
+    selectionRect.style.width = '0px'; selectionRect.style.height = '0px';
+    selectionRect.classList.remove('hidden');
+    overlay.setPointerCapture?.(event.pointerId);
+  });
+  overlay.addEventListener('pointermove', (event:any) => {
+    if (!selectionActive || !dragStart) return;
+    const x = Math.min(dragStart.x,event.clientX), y = Math.min(dragStart.y,event.clientY);
+    selectionRect.style.left = x + 'px'; selectionRect.style.top = y + 'px';
+    selectionRect.style.width = Math.abs(event.clientX-dragStart.x) + 'px';
+    selectionRect.style.height = Math.abs(event.clientY-dragStart.y) + 'px';
+    selectionRect.style.borderRadius = $('#targetShape').value === 'ellipse' ? '50%' : '0.25rem';
+  });
+  overlay.addEventListener('pointerup', (event:any) => {
+    if (!selectionActive) return;
+    const shape = $('#targetShape').value, size = $('#targetSize').value;
+    let x=event.clientX,y=event.clientY,w=0,h=0;
+    if (dragStart) { x=Math.min(dragStart.x,event.clientX); y=Math.min(dragStart.y,event.clientY); w=Math.abs(event.clientX-dragStart.x); h=Math.abs(event.clientY-dragStart.y); }
+    if (shape === 'point') {
+      const el = document.elementFromPoint(event.clientX,event.clientY);
+      const r = el?.getBoundingClientRect();
+      if (r) { x=r.x; y=r.y; w=r.width; h=r.height; }
+      else { x=event.clientX; y=event.clientY; w=1; h=1; }
+    } else if (size !== 'custom' && w < 20 && h < 20) {
+      const preset = size === 'small' ? 80 : size === 'large' ? 320 : 180;
+      w=preset; h=preset; x=Math.max(0,event.clientX-preset/2); y=Math.max(0,event.clientY-preset/2);
+    }
+    captureTarget(x,y,Math.max(1,w),Math.max(1,h));
+  });
+  document.addEventListener('keydown', (event) => { if (event.key === 'Escape' && selectionActive) { stopSelection(); dialog.showModal(); } });
+
+  function setVoiceState(m:string,listening=false) { $('#voiceStatus').textContent=m; $('#voiceBtn').disabled=listening; $('#stopVoiceBtn').disabled=!listening; }
   const SR = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+  let recognition:any=null;
   if (SR) {
     recognition = new SR(); recognition.lang = 'en-IN'; recognition.continuous = true; recognition.interimResults = true;
-    recognition.onstart = () => { isListening = true; setVoiceState('Listening… speak your feedback.', true); };
-    recognition.onresult = (e: any) => { let f = ''; for (let i = e.resultIndex; i < e.results.length; i++) if (e.results[i].isFinal) f += e.results[i][0].transcript + ' '; if (f) input.value = (input.value ? input.value.trimEnd() + ' ' : '') + f.trim(); };
-    recognition.onerror = (e: any) => { isListening = false; setVoiceState('Voice input unavailable (' + e.error + '). Type instead.'); };
-    recognition.onend = () => { isListening = false; setVoiceState('Dictation stopped. Review the text, then add the note.'); };
-    $('#voiceBtn').addEventListener('click', () => { try { recognition.start(); } catch { setVoiceState('Could not start voice input. Type instead.'); } });
-    $('#stopVoiceBtn').addEventListener('click', () => recognition.stop());
-  } else { $('#voiceBtn').disabled = true; setVoiceState('Voice recognition not supported here. Typing is available.'); }
+    recognition.onstart = () => setVoiceState('Listening… speak your feedback.',true);
+    recognition.onresult = (e:any) => { let f=''; for (let i=e.resultIndex;i<e.results.length;i++) if(e.results[i].isFinal) f += e.results[i][0].transcript + ' '; if(f) input.value=(input.value ? input.value.trimEnd()+' ':'')+f.trim(); };
+    recognition.onerror = (e:any) => setVoiceState('Voice input unavailable ('+e.error+'). Type instead.');
+    recognition.onend = () => setVoiceState('Dictation stopped. Review the text, then add the note.');
+    $('#voiceBtn').addEventListener('click',()=>{ try{recognition.start();}catch{setVoiceState('Could not start voice input. Type instead.');} });
+    $('#stopVoiceBtn').addEventListener('click',()=>recognition.stop());
+  } else { $('#voiceBtn').disabled=true; setVoiceState('Voice recognition not supported here. Typing is available.'); }
+  currentTargetSummary();
   render();
 </script>
