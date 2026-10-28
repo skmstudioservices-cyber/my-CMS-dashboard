@@ -37,6 +37,45 @@ const { title = 'Nexus CMS — Control Center', active = 'overview', crumb = ['M
     toggle?.addEventListener('click', () => { side?.classList.remove('-translate-x-full'); back?.classList.remove('hidden'); });
     back?.addEventListener('click', closeNav);
     document.querySelectorAll('#sidebar a').forEach((a) => a.addEventListener('click', closeNav));
+
+    // Apply saved readability preferences consistently across every CMS screen.
+    const fontFamilies: Record<string, string> = {
+      'Inter': 'Inter:wght@400;500;600;700',
+      'Roboto': 'Roboto:wght@400;500;700',
+      'Open Sans': 'Open+Sans:wght@400;500;600;700',
+      'Lato': 'Lato:wght@400;700',
+      'Montserrat': 'Montserrat:wght@400;500;600;700',
+      'Poppins': 'Poppins:wght@400;500;600;700',
+      'Nunito': 'Nunito:wght@400;600;700',
+      'Noto Sans': 'Noto+Sans:wght@400;500;600;700',
+      'Source Sans 3': 'Source+Sans+3:wght@400;500;600;700',
+      'Atkinson Hyperlegible': 'Atkinson+Hyperlegible:wght@400;700',
+      'Lexend': 'Lexend:wght@400;500;600;700'
+    };
+    const applyComfortPreferences = (raw?: string | null) => {
+      try {
+        const p = JSON.parse(raw ?? localStorage.getItem('nexus-comfort-preferences-v1') ?? 'null');
+        if (!p) return;
+        const font = String(p.font ?? 'system');
+        const family = font === 'system' ? 'system-ui, -apple-system, "Segoe UI", sans-serif' :
+          font === 'Arial' ? 'Arial, sans-serif' : font === 'Georgia' ? 'Georgia, serif' :
+          '"' + font + '", system-ui, sans-serif';
+        document.documentElement.style.setProperty('--font-sans', family);
+        if (['14','15','16','18'].includes(String(p.size))) document.documentElement.style.fontSize = String(p.size) + 'px';
+        if (['1.45','1.65','1.85'].includes(String(p.spacing))) document.documentElement.style.setProperty('--dashboard-line-height', String(p.spacing));
+        if (/^#[0-9a-f]{6}$/i.test(String(p.accent))) document.documentElement.style.setProperty('--color-primary', String(p.accent));
+        if (font in fontFamilies) {
+          let link = document.getElementById('user-google-font') as HTMLLinkElement | null;
+          if (!link) { link = document.createElement('link'); link.id = 'user-google-font'; link.rel = 'stylesheet'; document.head.appendChild(link); }
+          link.href = 'https://fonts.googleapis.com/css2?family=' + fontFamilies[font] + '&display=swap';
+        } else document.getElementById('user-google-font')?.remove();
+      } catch { /* Ignore malformed or unavailable local preferences. */ }
+    };
+    applyComfortPreferences();
+    window.addEventListener('nexus:preferences-updated', (event) => {
+      const detail = (event as CustomEvent<string>).detail;
+      applyComfortPreferences(detail);
+    });
   </script>
 </body>
 </html>
