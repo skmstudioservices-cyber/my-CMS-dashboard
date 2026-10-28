@@ -192,6 +192,8 @@
     document.body.style.overflow = '';
   }
   function captureTarget(x:number,y:number,w:number,h:number) {
+    // Hide the pointer-catching overlay before inspecting the underlying page element.
+    $('#selectionOverlay').classList.add('hidden');
     const shape = $('#targetShape').value;
     const cx = x + w/2, cy = y + h/2;
     const el = document.elementFromPoint(Math.max(0, Math.min(innerWidth-1, cx)), Math.max(0, Math.min(innerHeight-1, cy)));
