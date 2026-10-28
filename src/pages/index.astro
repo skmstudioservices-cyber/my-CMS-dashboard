@@ -52,7 +52,7 @@ import Base from '../layouts/Base.astro';
     </div></article>
   </section>
 
-  <section class="card mb-6"><div class="card-body p-4 sm:p-5">
+  <section data-dashboard-panel="infrastructure" role="tabpanel" class="card mb-6 hidden"><div class="card-body p-4 sm:p-5">
     <div class="flex items-center justify-between gap-2 mb-3"><h2 class="font-semibold m-0">🧺 KV namespaces</h2><span id="kvCount" class="badge">0</span></div>
     <div id="kvTable" class="state"><strong>Loading…</strong></div>
   </div></section>
