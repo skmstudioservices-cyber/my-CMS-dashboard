@@ -3,16 +3,147 @@ import Base from '../layouts/Base.astro';
 import Panel from '../components/Panel.astro';
 ---
 <Base title="Settings — Nexus CMS" active="settings" crumb={['Mission Control', 'Settings']}>
-  <h1 class="text-2xl font-bold tracking-tight m-0 mb-1">Settings</h1>
-  <p class="opacity-60 text-sm m-0 mb-6">Preferences, PWA and build info.</p>
-  <Panel title="Application" status="connected">
-    <table class="table table-sm"><tbody><tr><td class="opacity-60">Framework</td><td>Astro 5 + Tailwind 4</td></tr><tr><td class="opacity-60">Deploy</td><td>Bridge → Worker + Pages</td></tr><tr><td class="opacity-60">Route</td><td>/ and /phase-0/</td></tr></tbody></table>
-  </Panel>
-<Panel title="PWA / install" status="connected">
-    <p class="text-sm opacity-70 m-0">Manifest and service worker are served from the site root. Install from the browser menu.</p>
-  </Panel>
-<Panel title="Authentication" status="planned">
-  <div class="state"><strong>Not connected</strong><span>Auth must be designed before sensitive account data or privileged actions are exposed.</span></div>
+  <div class="mb-6">
+    <h1 class="text-2xl font-bold tracking-tight m-0 mb-1">⚙️ Comfort & display settings</h1>
+    <p class="opacity-70 text-sm m-0">Make the dashboard easier on your eyes. Preferences are saved in this browser.</p>
+  </div>
+
+  <Panel title="🔤 Font and readability" status="local">
+    <div class="grid sm:grid-cols-2 gap-4">
+      <label class="grid gap-2 text-sm">Font family
+        <select id="fontFamily" class="select w-full">
+          <option value="system">System default</option>
+          <option value="Inter">Inter</option>
+          <option value="Roboto">Roboto</option>
+          <option value="Open Sans">Open Sans</option>
+          <option value="Lato">Lato</option>
+          <option value="Montserrat">Montserrat</option>
+          <option value="Poppins">Poppins</option>
+          <option value="Nunito">Nunito</option>
+          <option value="Noto Sans">Noto Sans</option>
+          <option value="Source Sans 3">Source Sans 3</option>
+          <option value="Atkinson Hyperlegible">Atkinson Hyperlegible</option>
+          <option value="Lexend">Lexend</option>
+          <option value="Arial">Arial</option>
+          <option value="Georgia">Georgia</option>
+        </select>
+      </label>
+      <label class="grid gap-2 text-sm">Text size
+        <select id="textScale" class="select w-full">
+          <option value="14">Compact — 14px</option>
+          <option value="15">Comfortable — 15px</option>
+          <option value="16">Large — 16px</option>
+          <option value="18">Extra large — 18px</option>
+        </select>
+      </label>
+      <label class="grid gap-2 text-sm">Line spacing
+        <select id="lineSpacing" class="select w-full">
+          <option value="1.45">Compact</option>
+          <option value="1.65">Comfortable</option>
+          <option value="1.85">Relaxed</option>
+        </select>
+      </label>
+      <label class="grid gap-2 text-sm">Accent color
+        <select id="accentColor" class="select w-full">
+          <option value="#2563eb">Blue</option>
+          <option value="#6d28d9">Violet</option>
+          <option value="#047857">Green</option>
+          <option value="#b45309">Amber</option>
+          <option value="#be123c">Rose</option>
+          <option value="#0e7490">Teal</option>
+        </select>
+      </label>
+    </div>
+    <div class="flex flex-wrap gap-3 mt-5">
+      <button id="savePreferences" class="btn btn-primary" type="button">💾 Save preferences</button>
+      <button id="resetPreferences" class="btn btn-outline" type="button">↺ Reset</button>
+      <span id="preferenceStatus" class="text-sm opacity-70 self-center" role="status" aria-live="polite"></span>
+    </div>
+    <div class="mt-5 p-4 rounded-xl border border-base-300">
+      <div class="font-semibold mb-1">👀 Live preview</div>
+      <p id="fontPreview" class="m-0">The quick brown fox jumps over the lazy dog. Numbers: 1234567890. Clear typography reduces effort during long dashboard sessions.</p>
+    </div>
+    <p class="text-xs opacity-60 mt-3 mb-0">Google Fonts load from Google's official font stylesheet when selected. System fonts work without an external request.</p>
   </Panel>
 
+  <Panel title="📊 Dashboard display" status="planned">
+    <p class="text-sm opacity-70 m-0">The dashboard is being extended to support chart, table, card, and compact-number views. These controls will apply to global and per-site dashboards once those views are connected to live data.</p>
+  </Panel>
+
+  <Panel title="🔌 Integrations & synchronization" status="in progress">
+    <p class="text-sm opacity-70 m-0">Connection health, last successful sync, refresh-all, section refresh, and provider-specific reconnect controls will live in the Integrations workspace. A refresh will only be called successful when the upstream source has actually been refreshed.</p>
+  </Panel>
+
+  <Panel title="🔐 Security" status="important">
+    <div class="state"><strong>Authentication must be completed before write actions</strong><span>Noindex is not access control. Before enabling publishing or infrastructure changes, protect the CMS with authentication, server-side secrets, scoped permissions, and an audit trail.</span></div>
+  </Panel>
+
+  <script>
+    const fonts: Record<string, string> = {
+      'Inter': 'Inter:wght@400;500;600;700',
+      'Roboto': 'Roboto:wght@400;500;700',
+      'Open Sans': 'Open+Sans:wght@400;500;600;700',
+      'Lato': 'Lato:wght@400;700',
+      'Montserrat': 'Montserrat:wght@400;500;600;700',
+      'Poppins': 'Poppins:wght@400;500;600;700',
+      'Nunito': 'Nunito:wght@400;600;700',
+      'Noto Sans': 'Noto+Sans:wght@400;500;600;700',
+      'Source Sans 3': 'Source+Sans+3:wght@400;500;600;700',
+      'Atkinson Hyperlegible': 'Atkinson+Hyperlegible:wght@400;700',
+      'Lexend': 'Lexend:wght@400;500;600;700'
+    };
+    const controls = {
+      font: document.getElementById('fontFamily') as HTMLSelectElement,
+      size: document.getElementById('textScale') as HTMLSelectElement,
+      spacing: document.getElementById('lineSpacing') as HTMLSelectElement,
+      accent: document.getElementById('accentColor') as HTMLSelectElement
+    };
+    const status = document.getElementById('preferenceStatus');
+    const preview = document.getElementById('fontPreview');
+    const key = 'nexus-comfort-preferences-v1';
+    function apply(values: {font: string; size: string; spacing: string; accent: string}) {
+      const family = values.font === 'system' ? 'system-ui, -apple-system, "Segoe UI", sans-serif' :
+        values.font === 'Arial' ? 'Arial, sans-serif' :
+        values.font === 'Georgia' ? 'Georgia, serif' : '"' + values.font + '", system-ui, sans-serif';
+      document.documentElement.style.setProperty('--font-sans', family);
+      document.documentElement.style.fontSize = values.size + 'px';
+      document.documentElement.style.setProperty('--color-primary', values.accent);
+      document.documentElement.style.setProperty('--color-primary-content', '#ffffff');
+      document.documentElement.style.setProperty('--dashboard-line-height', values.spacing);
+      if (preview) (preview as HTMLElement).style.lineHeight = values.spacing;
+      if (values.font in fonts) {
+        let link = document.getElementById('user-google-font') as HTMLLinkElement | null;
+        if (!link) { link = document.createElement('link'); link.id = 'user-google-font'; link.rel = 'stylesheet'; document.head.appendChild(link); }
+        link.href = 'https://fonts.googleapis.com/css2?family=' + fonts[values.font] + '&display=swap';
+      } else document.getElementById('user-google-font')?.remove();
+    }
+    function read() {
+      try {
+        const raw = localStorage.getItem(key);
+        return raw ? JSON.parse(raw) : {font:'system', size:'15', spacing:'1.65', accent:'#2563eb'};
+      } catch { return {font:'system', size:'15', spacing:'1.65', accent:'#2563eb'}; }
+    }
+    function syncControls(values: {font:string;size:string;spacing:string;accent:string}) {
+      controls.font.value = values.font;
+      controls.size.value = values.size;
+      controls.spacing.value = values.spacing;
+      controls.accent.value = values.accent;
+    }
+    function current() { return {font:controls.font.value,size:controls.size.value,spacing:controls.spacing.value,accent:controls.accent.value}; }
+    const saved = read();
+    syncControls(saved);
+    apply(saved);
+    Object.values(controls).forEach(control => control.addEventListener('change', () => apply(current())));
+    document.getElementById('savePreferences')?.addEventListener('click', () => {
+      const values = current();
+      localStorage.setItem(key, JSON.stringify(values));
+      apply(values);
+      if (status) status.textContent = '✅ Preferences saved on this device.';
+    });
+    document.getElementById('resetPreferences')?.addEventListener('click', () => {
+      const defaults = {font:'system',size:'15',spacing:'1.65',accent:'#2563eb'};
+      syncControls(defaults); apply(defaults); localStorage.removeItem(key);
+      if (status) status.textContent = 'Preferences reset.';
+    });
+  </script>
 </Base>
