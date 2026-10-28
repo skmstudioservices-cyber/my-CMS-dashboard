@@ -1,181 +1,139 @@
 ---
 import Base from '../layouts/Base.astro';
-
-const metrics = [
-  { label: 'Total Transactions', value: '4,501', delta: '+2.01%', up: true },
-  { label: 'Cancellation Case', value: '0', delta: '-8.1%', up: false },
-  { label: 'Gross Rental Value', value: '₹72,000', delta: '+13%', up: true },
-  { label: 'Gross Rental Profit', value: '₹54,000', delta: '+10%', up: true },
-  { label: 'New Users', value: '2,500', delta: '-10%', up: false },
-];
-const products = [
-  { name: 'Sites — digipincode', cat: 'Cloudflare · D1', stock: 220, active: true },
-  { name: 'Sites — mapsnearme', cat: 'Cloudflare · Pages', stock: 50, active: false },
-  { name: 'Sites — examstatus', cat: 'Cloudflare · Workers', stock: 92, active: true },
-  { name: 'Sites — my-CMS-dashboard', cat: 'Cloudflare · Workers', stock: 50, active: false },
-];
-const activities = [
-  ['cms-deploy', 'Bridge build → Worker deploy', '07:00 PM'],
-  ['d1-refresh', 'Trending keywords synced', '06:00 PM'],
-  ['site-monitor', '28 properties probed', '03:00 PM'],
-  ['sitemap-verify', 'Sitemap parts refreshed', '12:00 PM'],
-];
-const transactions = [
-  ['digipincode', '09 Oct 2026', '+₹81'], ['mapsnearme', '09 Oct 2026', '-₹32'],
-  ['examstatus', '08 Oct 2026', '+₹50'], ['skmtools', '07 Oct 2026', '-₹40'],
-];
 ---
-<Base title="Nexus CMS — Control Center" active="overview">
-  <h1 class="text-2xl font-bold tracking-tight m-0 mb-1">Overview</h1>
-  <p class="opacity-60 text-sm m-0 mb-6">Your control center foundation · Phase 0 framework</p>
-
-  <!-- BLOCK:OVERVIEW-METRICS -->
-  <div class="flex items-center justify-between mb-3">
-    <h2 class="text-base font-semibold m-0">General Report</h2>
-    <div class="text-xs opacity-60">Daily · Visitors</div>
+<Base title="Nexus CMS — Control Center" active="overview" crumb={['Mission Control', 'Overview']}>
+  <div class="flex flex-wrap items-start justify-between gap-4 mb-6">
+    <div>
+      <h1 class="text-2xl font-bold tracking-tight m-0 mb-1">SKM Mission Control</h1>
+      <p class="text-sm opacity-60 m-0">One place to check your sites, databases and Cloudflare resources.</p>
+    </div>
+    <button id="reloadSnapshot" class="btn btn-outline btn-sm" type="button">↻ Reload snapshot</button>
   </div>
-  <section class="grid grid-cols-2 lg:grid-cols-5 gap-4 mb-6">
-    {metrics.map((m) => (
-      <article class="card bg-base-100 border border-base-300 rounded-xl">
-        <div class="card-body p-4">
-          <div class="text-xs opacity-60">{m.label}</div>
-          <div class="text-2xl font-bold tracking-tight mt-1.5">{m.value}</div>
-          <div class:list={["text-xs", m.up ? "text-success" : "text-error"]}>{m.up ? '↑' : '↓'} {m.delta}</div>
-        </div>
-      </article>
+
+  <div id="snapshotStatus" class="alert mb-6" role="status" aria-live="polite"><span class="text-sm">Loading saved Cloudflare data…</span></div>
+
+  <section class="grid grid-cols-2 xl:grid-cols-4 gap-3 mb-6" aria-label="Resource totals">
+    {[
+      ['Pages projects', 'stat-pages', '—'], ['Workers', 'stat-workers', '—'],
+      ['D1 databases', 'stat-d1', '—'], ['KV namespaces', 'stat-kv', '—'],
+    ].map(([label, id, value]) => (
+      <article class="card"><div class="card-body p-4">
+        <div class="text-xs opacity-60">{label}</div><div id={id} class="text-3xl font-bold mt-1">{value}</div>
+        <div class="text-xs opacity-50 mt-1">From the last saved account snapshot</div>
+      </div></article>
     ))}
   </section>
 
-  <!-- BLOCK:OVERVIEW-LIVE -->
-  <section class="grid lg:grid-cols-3 gap-4 mb-6">
-    <article class="card bg-base-100 border border-base-300 rounded-xl lg:col-span-2">
-      <div class="card-body p-5">
-        <div class="flex items-center justify-between">
-          <div class="text-xs opacity-60">Sales earnings this month</div>
-          <span class="badge badge-success badge-sm">↑ 42%</span>
-        </div>
-        <div class="text-3xl font-extrabold tracking-tight mt-1">₹ 54,143</div>
-        <p class="text-xs opacity-60 mt-1 mb-3">After associated fees, before taxes.</p>
-        <button class="btn btn-primary btn-sm w-fit">Download Report ↓</button>
-      </div>
-    </article>
-    <article class="card bg-base-100 border border-base-300 rounded-xl">
-      <div class="card-body p-5">
-        <div class="text-xs opacity-60">Realtime active users</div>
-        <div class="text-3xl font-extrabold tracking-tight mt-1">214</div>
-        <progress class="progress progress-primary w-full mt-3" value="80" max="100"></progress>
-        <div class="text-xs opacity-60 mt-1">Page views per second · 80%</div>
-        <div class="divider my-2"></div>
-        <div class="text-xs font-semibold mb-1">Top active pages</div>
-        <ul class="text-xs space-y-1">
-          <li class="flex justify-between"><span class="truncate">/v2/maharashtra/…/pincode-431007</span><b>472</b></li>
-          <li class="flex justify-between"><span class="truncate">/search?q=pincode</span><b>294</b></li>
-          <li class="flex justify-between"><span class="truncate">/sitemap.xml</span><b>83</b></li>
-        </ul>
-      </div>
-    </article>
-  </section>
-
-  <!-- BLOCK:OVERVIEW-PANELS -->
-  <section class="grid lg:grid-cols-3 gap-4 mb-6">
-    <article class="card bg-base-100 border border-base-300 rounded-xl lg:col-span-2">
-      <div class="card-body p-5">
-        <div class="flex items-center justify-between mb-2">
-          <h3 class="font-semibold m-0">Official stores</h3>
-          <select class="select select-bordered select-xs"><option>Filter by city</option></select>
-        </div>
-        <div class="h-52 rounded-lg bg-base-200 grid place-items-center text-xs opacity-50 border border-base-300">Map preview · Leaflet mounts here</div>
-      </div>
-    </article>
-    <article class="card bg-base-100 border border-base-300 rounded-xl">
-      <div class="card-body p-5">
-        <h3 class="font-semibold m-0 mb-3">Weekly best sellers</h3>
-        <ul class="space-y-3 text-sm">
-          {['Angela Jolie','John Travolta','John Travolta','Angela Jolie'].map((n,i)=>(
-            <li class="flex items-center gap-3">
-              <div class="w-8 h-8 rounded-full bg-primary/15 text-primary grid place-items-center text-xs font-bold">{n[0]}</div>
-              <div class="min-w-0"><div class="truncate font-medium">{n}</div><div class="text-xs opacity-50">{['12 Oct','17 Apr','11 Jun','6 Oct'][i]}</div></div>
-              <span class="badge badge-primary badge-sm ml-auto">127</span>
-            </li>
-          ))}
-        </ul>
-      </div>
-    </article>
-  </section>
-
-  <!-- BLOCK:OVERVIEW-PROMOS -->
-  <section class="grid md:grid-cols-2 gap-4 mb-6">
-    <article class="card bg-primary text-primary-content rounded-xl"><div class="card-body p-5">
-      <h3 class="font-semibold m-0">Transact safely with the free-tier guard</h3>
-      <p class="text-sm opacity-90 mt-1 mb-3">D1 row reads, KV ops and Worker requests, tracked daily.</p>
-      <button class="btn btn-sm bg-white text-primary border-0 w-fit">Start now</button>
-    </div></article>
-    <article class="card bg-base-100 border border-base-300 rounded-xl"><div class="card-body p-5">
-      <h3 class="font-semibold m-0">Invite the team to Mission Control</h3>
-      <p class="text-sm opacity-60 mt-1 mb-3">Share read-only access to the fleet view.</p>
-      <div class="join w-full"><input class="input input-bordered input-sm join-item flex-1" value="https://my-cms-dashboard.india-in.workers.dev" readonly /><button class="btn btn-sm join-item">Copy</button></div>
-    </div></article>
-  </section>
-
-  <!-- BLOCK:OVERVIEW-PRODUCTS -->
-  <section class="card bg-base-100 border border-base-300 rounded-xl mb-6">
-    <div class="card-body p-5">
-      <div class="flex items-center justify-between mb-3">
-        <h3 class="font-semibold m-0">Weekly top projects</h3>
-        <div class="flex gap-2"><button class="btn btn-xs btn-outline">Export Excel</button><button class="btn btn-xs btn-outline">Export PDF</button></div>
-      </div>
-      <div class="overflow-x-auto">
-        <table class="table table-sm">
-          <thead><tr><th>Project</th><th>Stack</th><th>Checks</th><th>Status</th></tr></thead>
-          <tbody>
-            {products.map((p)=>(
-              <tr>
-                <td class="font-medium">{p.name}</td>
-                <td class="opacity-60">{p.cat}</td>
-                <td>{p.stock}</td>
-                <td><span class:list={["badge badge-sm", p.active ? "badge-success" : "badge-ghost"]}>{p.active ? 'Active' : 'Idle'}</span></td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+  <section class="card mb-6"><div class="card-body p-4 sm:p-5">
+    <div class="flex flex-wrap items-center justify-between gap-2 mb-3">
+      <div><h2 class="font-semibold m-0">🌐 Pages projects</h2><p class="text-xs opacity-60 mt-1 mb-0">Open a project to check the live site.</p></div>
+      <span id="pagesCount" class="badge">0 projects</span>
     </div>
+    <div id="pagesTable" class="state"><strong>Loading…</strong><span>Reading the saved Cloudflare snapshot.</span></div>
+  </div></section>
+
+  <section class="grid xl:grid-cols-2 gap-4 mb-6">
+    <article class="card"><div class="card-body p-4 sm:p-5">
+      <div class="flex items-center justify-between gap-2 mb-3"><h2 class="font-semibold m-0">⚙️ Workers</h2><span id="workersCount" class="badge">0</span></div>
+      <div id="workersTable" class="state"><strong>Loading…</strong></div>
+    </div></article>
+    <article class="card"><div class="card-body p-4 sm:p-5">
+      <div class="flex items-center justify-between gap-2 mb-3"><h2 class="font-semibold m-0">🗄️ D1 databases</h2><span id="d1Count" class="badge">0</span></div>
+      <div id="d1Table" class="state"><strong>Loading…</strong></div>
+    </div></article>
   </section>
 
-  <!-- BLOCK:OVERVIEW-NOTES -->
-  <section class="alert alert-info mb-6">
-    <div><strong class="text-sm">Important note</strong><p class="text-xs opacity-80">D1 free tier enforces daily row limits since 1 Sept 2026 — watch the guard.</p></div>
-    <div class="flex gap-2"><button class="btn btn-xs btn-ghost">View</button><button class="btn btn-xs btn-ghost">Dismiss</button></div>
-  </section>
+  <section class="card mb-6"><div class="card-body p-4 sm:p-5">
+    <div class="flex items-center justify-between gap-2 mb-3"><h2 class="font-semibold m-0">🧺 KV namespaces</h2><span id="kvCount" class="badge">0</span></div>
+    <div id="kvTable" class="state"><strong>Loading…</strong></div>
+  </div></section>
 
-  <!-- BLOCK:OVERVIEW-BOTTOM -->
-  <section class="grid lg:grid-cols-3 gap-4">
-    <article class="card bg-base-100 border border-base-300 rounded-xl"><div class="card-body p-5">
-      <h3 class="font-semibold m-0 mb-3">Schedules</h3>
-      <ul class="text-sm space-y-2">
-        <li class="flex justify-between"><span>Health check</span><span class="opacity-50">3h</span></li>
-        <li class="flex justify-between"><span>Resource sync</span><span class="opacity-50">6h</span></li>
-        <li class="flex justify-between"><span>Log analysis</span><span class="opacity-50">daily</span></li>
-      </ul>
-    </div></article>
-    <article class="card bg-base-100 border border-base-300 rounded-xl"><div class="card-body p-5">
-      <h3 class="font-semibold m-0 mb-3">Recent activity</h3>
-      <ul class="text-sm space-y-3">
-        {activities.map((a)=>(
-          <li class="flex gap-3"><span class="w-2 h-2 rounded-full bg-primary mt-1.5 shrink-0"></span>
-            <div class="min-w-0"><div class="font-medium truncate">{a[0]}</div><div class="text-xs opacity-50">{a[1]}</div></div>
-            <span class="text-xs opacity-50 ml-auto shrink-0">{a[2]}</span></li>
-        ))}
-      </ul>
-    </div></article>
-    <article class="card bg-base-100 border border-base-300 rounded-xl"><div class="card-body p-5">
-      <h3 class="font-semibold m-0 mb-3">Transactions</h3>
-      <ul class="text-sm space-y-2">
-        {transactions.map((t)=>(
-          <li class="flex justify-between"><span>{t[0]} <span class="opacity-50 text-xs">{t[1]}</span></span>
-            <b class:list={[t[2].startsWith('+') ? "text-success" : "text-error"]}>{t[2]}</b></li>
-        ))}
-      </ul>
-    </div></article>
-  </section>
+  <section class="card"><div class="card-body p-4 sm:p-5">
+    <div class="flex items-center justify-between gap-3 mb-2"><h2 class="font-semibold m-0">🔗 GitHub source</h2><a class="btn btn-outline btn-xs" href="https://github.com/skmstudioservices-cyber/my-CMS-dashboard" target="_blank" rel="noopener noreferrer">Open repository ↗</a></div>
+    <div id="sourceDetails" class="state"><strong>Deployment details not saved yet</strong><span>The next successful bridge deployment can add the source commit and workflow link here.</span></div>
+  </div></section>
+
+  <p class="text-xs opacity-50 mt-5">Read-only overview. Reloading reads the saved snapshot; it does not change Cloudflare resources or start a deployment.</p>
 </Base>
+
+<script>
+  type PageProject = { name?: string; productionBranch?: string | null; domain?: string | null };
+  type WorkerItem = { id?: string; modified?: string | null };
+  type Database = { name?: string; uuid?: string; sizeKb?: number };
+  type Namespace = { title?: string; id?: string };
+  type Snapshot = {
+    connected?: boolean; reason?: string; accountId?: string; generatedAt?: string;
+    pages?: PageProject[]; workers?: WorkerItem[]; d1?: Database[]; kv?: Namespace[];
+    source?: { repository?: string; branch?: string; commit?: string; message?: string; committedAt?: string; runUrl?: string };
+  };
+  const esc = (v: unknown) => String(v ?? '—').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c] as string));
+  const setState = (id: string, title: string, detail = '') => {
+    const el = document.getElementById(id);
+    if (el) el.innerHTML = '<div class="state"><strong>' + esc(title) + '</strong>' + (detail ? '<span>' + esc(detail) + '</span>' : '') + '</div>';
+  };
+  const table = (id: string, columns: string[], rows: string[][]) => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    if (!rows.length) { setState(id, 'No items found', 'The snapshot did not include any items in this section.'); return; }
+    el.className = 'overflow-x-auto';
+    el.innerHTML = '<table class="table table-sm"><thead><tr>' + columns.map(c => '<th>' + esc(c) + '</th>').join('') + '</tr></thead><tbody>' +
+      rows.map(row => '<tr>' + row.map(c => '<td>' + c + '</td>').join('') + '</tr>').join('') + '</tbody></table>';
+  };
+  const setText = (id: string, value: unknown) => { const el = document.getElementById(id); if (el) el.textContent = String(value ?? '—'); };
+  async function loadSnapshot() {
+    const status = document.getElementById('snapshotStatus');
+    if (status) status.innerHTML = '<span class="text-sm">Loading saved Cloudflare data…</span>';
+    try {
+      const response = await fetch('/api/cf', { headers: { accept: 'application/json' }, cache: 'no-store' });
+      const data = await response.json() as Snapshot;
+      if (!response.ok || !data.connected) {
+        if (status) status.innerHTML = '<span class="text-sm">⚠️ Cloudflare data is not connected: ' + esc(data.reason || 'No saved snapshot available.') + '</span>';
+        ['pagesTable','workersTable','d1Table','kvTable','sourceDetails'].forEach(id => setState(id, 'Data unavailable', data.reason || 'Run the dashboard deployment workflow to save a snapshot.'));
+        ['stat-pages','stat-workers','stat-d1','stat-kv'].forEach(id => setText(id, '—'));
+        return;
+      }
+      const pages = data.pages || [], workers = data.workers || [], dbs = data.d1 || [], namespaces = data.kv || [];
+      setText('stat-pages', pages.length); setText('stat-workers', workers.length); setText('stat-d1', dbs.length); setText('stat-kv', namespaces.length);
+      setText('pagesCount', pages.length + (pages.length === 1 ? ' project' : ' projects'));
+      setText('workersCount', workers.length); setText('d1Count', dbs.length); setText('kvCount', namespaces.length);
+      const stamp = data.generatedAt ? new Date(data.generatedAt) : null;
+      const validStamp = stamp && !Number.isNaN(stamp.getTime());
+      const ageHours = validStamp ? (Date.now() - stamp.getTime()) / 3600000 : null;
+      const stale = ageHours !== null && ageHours > 24;
+      const when = validStamp ? stamp.toLocaleString() : 'time not recorded';
+      if (status) {
+        status.className = 'alert mb-6 ' + (stale ? 'alert-info' : '');
+        status.innerHTML = '<span class="text-sm">' + (stale ? '⚠️ Snapshot may be old. ' : '✅ ') + 'Cloudflare connected · ' +
+          pages.length + ' Pages · ' + workers.length + ' Workers · last saved ' + esc(when) +
+          ' · account ' + esc(data.accountId || 'not recorded') + '</span>';
+      }
+      table('pagesTable', ['Project', 'Branch', 'Domain', 'Open'], pages.map(p => {
+        const domain = String(p.domain || '');
+        const safeDomain = /^[a-z0-9.-]+$/i.test(domain) ? domain : '';
+        const open = safeDomain ? '<a class="btn btn-xs btn-outline" href="https://' + esc(safeDomain) + '" target="_blank" rel="noopener noreferrer">Visit ↗</a>' : '—';
+        return ['<span class="font-medium">' + esc(p.name) + '</span>', esc(p.productionBranch || '—'), esc(domain || '—'), open];
+      }));
+      table('workersTable', ['Worker', 'Last updated'], workers.map(w => [esc(w.id), esc(w.modified ? new Date(w.modified).toLocaleString() : '—')]));
+      table('d1Table', ['Database', 'Size'], dbs.map(d => [esc(d.name), typeof d.sizeKb === 'number' ? esc(d.sizeKb.toLocaleString() + ' KB') : '—']));
+      table('kvTable', ['Namespace', 'ID'], namespaces.map(k => [esc(k.title), '<code class="text-xs">' + esc(k.id) + '</code>']));
+      if (data.source?.commit) {
+        const s = data.source;
+        const repo = s.repository || 'skmstudioservices-cyber/my-CMS-dashboard';
+        const commitUrl = 'https://github.com/' + repo + '/commit/' + encodeURIComponent(s.commit);
+        const run = s.runUrl ? '<a class="btn btn-xs btn-outline" href="' + esc(s.runUrl) + '" target="_blank" rel="noopener noreferrer">Workflow ↗</a>' : '';
+        const target = document.getElementById('sourceDetails');
+        if (target) {
+          target.className = 'text-sm flex flex-col gap-2';
+          target.innerHTML = '<div><span class="text-xs opacity-60">Repository</span><div class="font-medium">' + esc(repo) + '</div></div>' +
+            '<div><span class="text-xs opacity-60">Saved source commit</span><div><a class="underline" href="' + esc(commitUrl) + '" target="_blank" rel="noopener noreferrer">' + esc(String(s.commit).slice(0,7)) + ' · ' + esc(s.message || 'View commit') + ' ↗</a></div></div>' +
+            '<div class="flex flex-wrap items-center gap-2"><span class="text-xs opacity-60">Branch: ' + esc(s.branch || 'main') + '</span>' + run + '</div>';
+        }
+      } else setState('sourceDetails', 'Deployment details not saved yet', 'The Cloudflare resource snapshot works. Add source-commit tracking in the bridge workflow to show the exact deployed commit here.');
+    } catch (error) {
+      if (status) status.innerHTML = '<span class="text-sm">❌ Could not load the saved snapshot. ' + esc(error instanceof Error ? error.message : error) + '</span>';
+      ['pagesTable','workersTable','d1Table','kvTable'].forEach(id => setState(id, 'Could not load data', 'Check the /api/cf connection and try again.'));
+    }
+  }
+  document.getElementById('reloadSnapshot')?.addEventListener('click', loadSnapshot);
+  loadSnapshot();
+</script>

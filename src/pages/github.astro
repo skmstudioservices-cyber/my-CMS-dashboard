@@ -4,12 +4,64 @@ import Panel from '../components/Panel.astro';
 ---
 <Base title="GitHub — Nexus CMS" active="github" crumb={['Mission Control', 'GitHub']}>
   <h1 class="text-2xl font-bold tracking-tight m-0 mb-1">GitHub</h1>
-  <p class="opacity-60 text-sm m-0 mb-6">Repositories, commits and deployment traceability.</p>
-  <Panel title="Repositories" status="disconnected">
-  <div class="state"><strong>Not connected</strong><span>Repository list and default branches appear when connected.</span></div>
-  </Panel>
-<Panel title="Deployment traceability" status="disconnected">
-  <div class="state"><strong>Not connected</strong><span>Live commit vs deployed commit comparison appears when connected.</span></div>
+  <p class="opacity-60 text-sm m-0 mb-6">See the dashboard source and the commit saved with the latest deployment snapshot.</p>
+
+  <Panel title="Dashboard repository" status="connected" subtitle="Source of truth for dashboard code">
+    <div class="flex flex-wrap items-center justify-between gap-3">
+      <div><div class="font-semibold">skmstudioservices-cyber / my-CMS-dashboard</div><div class="text-xs opacity-60 mt-1">Production source branch: main</div></div>
+      <a class="btn btn-primary btn-sm" href="https://github.com/skmstudioservices-cyber/my-CMS-dashboard" target="_blank" rel="noopener noreferrer">Open repository ↗</a>
+    </div>
   </Panel>
 
+  <Panel title="Latest saved deployment source" status="disconnected" subtitle="This is filled by the Cloudflare snapshot after the bridge workflow runs.">
+    <div id="github-source" class="state"><strong>Loading saved deployment details…</strong></div>
+  </Panel>
+
+  <Panel title="Cloudflare resource snapshot" status="connected" subtitle="Shared read-only snapshot from the dashboard's existing Cloudflare connection.">
+    <div id="github-cloudflare" class="state"><strong>Loading…</strong></div>
+  </Panel>
+
+  <p class="text-xs opacity-50">This page does not start a build or change code. GitHub workflow history is not shown unless the deployment workflow saves it.</p>
 </Base>
+
+<script>
+  const esc = (v: unknown) => String(v ?? '—').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c] as string));
+  const state = (id: string, title: string, detail: string) => {
+    const el = document.getElementById(id);
+    if (el) el.innerHTML = '<div class="state"><strong>' + esc(title) + '</strong><span>' + esc(detail) + '</span></div>';
+  };
+  (async () => {
+    try {
+      const response = await fetch('/api/cf', { headers: { accept: 'application/json' }, cache: 'no-store' });
+      const data = await response.json();
+      if (!response.ok || !data.connected) {
+        state('github-source', 'Deployment details unavailable', data.reason || 'No saved Cloudflare snapshot.');
+        state('github-cloudflare', 'Cloudflare data unavailable', data.reason || 'Run the deployment workflow to save a snapshot.');
+        return;
+      }
+      const source = data.source;
+      if (source?.commit) {
+        const repo = source.repository || 'skmstudioservices-cyber/my-CMS-dashboard';
+        const commitUrl = 'https://github.com/' + repo + '/commit/' + encodeURIComponent(source.commit);
+        const runLink = source.runUrl ? '<a class="btn btn-xs btn-outline" href="' + esc(source.runUrl) + '" target="_blank" rel="noopener noreferrer">Open workflow run ↗</a>' : '';
+        const el = document.getElementById('github-source');
+        if (el) {
+          el.className = 'grid gap-3 text-sm';
+          el.innerHTML = '<div><div class="text-xs opacity-60">Repository</div><div class="font-medium">' + esc(repo) + '</div></div>' +
+            '<div><div class="text-xs opacity-60">Saved source commit</div><a class="underline" href="' + esc(commitUrl) + '" target="_blank" rel="noopener noreferrer">' + esc(source.commit.slice(0,7)) + ' · ' + esc(source.message || 'View commit') + ' ↗</a></div>' +
+            '<div class="flex flex-wrap gap-3 text-xs opacity-70"><span>Branch: ' + esc(source.branch || 'main') + '</span><span>Commit date: ' + esc(source.committedAt || 'not recorded') + '</span></div>' + runLink;
+        }
+      } else state('github-source', 'No deployed commit recorded yet', 'The code repository is linked, but the current saved snapshot does not include the source commit. Run the updated bridge workflow after its next update.');
+      const el = document.getElementById('github-cloudflare');
+      if (el) {
+        el.className = 'grid grid-cols-2 md:grid-cols-4 gap-3';
+        const cards = [['Pages projects',(data.pages || []).length],['Workers',(data.workers || []).length],['D1 databases',(data.d1 || []).length],['KV namespaces',(data.kv || []).length]];
+        el.innerHTML = cards.map(([label,value]) => '<div class="rounded-lg border border-base-300 p-3"><div class="text-xs opacity-60">' + esc(label) + '</div><div class="text-2xl font-bold mt-1">' + esc(value) + '</div></div>').join('') +
+          '<div class="col-span-full text-xs opacity-50">Snapshot saved: ' + esc(data.generatedAt ? new Date(data.generatedAt).toLocaleString() : 'time not recorded') + '</div>';
+      }
+    } catch (error) {
+      state('github-source', 'Could not load deployment details', error instanceof Error ? error.message : String(error));
+      state('github-cloudflare', 'Could not load Cloudflare snapshot', 'Check the /api/cf connection and try again.');
+    }
+  })();
+</script>
