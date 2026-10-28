@@ -33,7 +33,7 @@ import Base from '../layouts/Base.astro';
     ))}
   </section>
 
-  <section class="card mb-6"><div class="card-body p-4 sm:p-5">
+  <section data-dashboard-panel="sites" role="tabpanel" class="card mb-6 hidden"><div class="card-body p-4 sm:p-5">
     <div class="flex flex-wrap items-center justify-between gap-2 mb-3">
       <div><h2 class="font-semibold m-0">🌐 Pages projects</h2><p class="text-xs opacity-60 mt-1 mb-0">Open a project to check the live site.</p></div>
       <span id="pagesCount" class="badge">0 projects</span>
@@ -57,7 +57,7 @@ import Base from '../layouts/Base.astro';
     <div id="kvTable" class="state"><strong>Loading…</strong></div>
   </div></section>
 
-  <section class="card"><div class="card-body p-4 sm:p-5">
+  <section data-dashboard-panel="github" role="tabpanel" class="card mb-6 hidden"><div class="card-body p-4 sm:p-5">
     <div class="flex items-center justify-between gap-3 mb-2"><h2 class="font-semibold m-0">🔗 GitHub source</h2><a class="btn btn-outline btn-xs" href="https://github.com/skmstudioservices-cyber/my-CMS-dashboard" target="_blank" rel="noopener noreferrer">Open repository ↗</a></div>
     <div id="sourceDetails" class="state"><strong>Deployment details not saved yet</strong><span>The next successful bridge deployment can add the source commit and workflow link here.</span></div>
   </div></section>
