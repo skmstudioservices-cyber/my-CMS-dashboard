@@ -1,0 +1,75 @@
+---
+import Base from '../layouts/Base.astro';
+import Panel from '../components/Panel.astro';
+
+const providers = [
+  {id:'github',name:'🐙 GitHub',group:'Development',method:'GitHub App or fine-grained token',needs:'Repo read access; add write scopes only for approved CMS actions.',url:'https://github.com/settings/apps',note:'ChatGPT’s GitHub connector does not automatically grant the deployed website API access.'},
+  {id:'cloudflare',name:'☁️ Cloudflare',group:'Infrastructure',method:'Cloudflare API token stored as a Pages secret',needs:'Scoped token and account ID. Keep tokens server-side.',url:'https://dash.cloudflare.com/profile/api-tokens',note:'Existing snapshot is cached data; live refresh still needs a verified server-side sync job.'},
+  {id:'notion',name:'📝 Notion',group:'Workspace',method:'Notion integration token or OAuth',needs:'Share the intended pages/databases with the integration.',url:'https://www.notion.so/profile/integrations',note:'MCP access in ChatGPT is separate from the website’s Notion API connection.'},
+  {id:'sheets',name:'📑 Google Sheets',group:'Workspace',method:'Google OAuth or service account',needs:'Enable Sheets API; share only chosen spreadsheets with the service account, or complete OAuth.',url:'https://console.cloud.google.com/apis/library/sheets.googleapis.com',note:'Your Sheets home currently shows SKM Analytics Backup 2026, SKM Impressions Compounding Plan — Oct 2026, SKM_Network_Workbook_Redesign_v2, and site inventory/report workbooks. Choose which are authoritative before syncing.'},
+  {id:'gsc',name:'🔎 Google Search Console',group:'Search & Analytics',method:'Google OAuth or service account',needs:'Enable Search Console API and grant access to each verified property.',url:'https://search.google.com/search-console',note:'Use the API for clicks, impressions, CTR, average position, and indexing data.'},
+  {id:'ga4',name:'📊 Google Analytics 4',group:'Search & Analytics',method:'Google OAuth or service account',needs:'Enable Analytics Data API and grant Viewer access to GA4 properties.',url:'https://analytics.google.com/',note:'Use the Data API for sessions, users, engagement, conversions, and date ranges.'},
+  {id:'bing',name:'🟦 Bing Webmaster Tools',group:'Search & Analytics',method:'Bing Webmaster API key',needs:'Create an API key and authorize the sites.',url:'https://www.bing.com/webmasters',note:'Sync site and search performance where the API exposes it.'},
+  {id:'ahrefs',name:'🔗 Ahrefs',group:'SEO',method:'Ahrefs API or exported reports',needs:'API plan/key or scheduled CSV exports, depending on account entitlement.',url:'https://ahrefs.com/',note:'ChatGPT’s Ahrefs plugin is not a credential the deployed CMS can reuse.'},
+  {id:'monetag',name:'💰 Monetag',group:'Monetization',method:'Official API if available for your account; otherwise scheduled exports/email reports',needs:'Provider-supported access method and explicit reporting permissions.',url:'https://monetag.com/',note:'Do not scrape the dashboard or invent revenue figures if an API/export is unavailable.'},
+  {id:'gmail',name:'✉️ Gmail reports',group:'Reports',method:'Google OAuth with read-only Gmail scope',needs:'Authorize a dedicated report mailbox/label and specify allowed senders.',url:'https://mail.google.com/',note:'Only parse report emails from approved senders; store source message IDs and report dates.'},
+  {id:'supabase',name:'◇ Supabase',group:'Data',method:'Project URL plus server-side service key or least-privilege key',needs:'Use least privilege and never expose service-role keys to the browser.',url:'https://supabase.com/dashboard',note:'Only needed for projects that actually use Supabase.'},
+  {id:'email',name:'📨 Other email reports',group:'Reports',method:'Provider-native mail connector/API or uploaded CSV',needs:'Explicit mailbox/sender allowlist and retention rules.',url:'https://mail.google.com/',note:'Email parsing is a fallback source, not a replacement for a reliable official API.'}
+];
+---
+<Base title="Integrations — Nexus CMS" active="integrations" crumb={['Mission Control', 'Integrations']}>
+  <div class="mb-6">
+    <h1 class="text-2xl font-bold tracking-tight m-0 mb-1">🔌 Integrations & connections</h1>
+    <p class="text-sm opacity-70 m-0">Connection setup center for the tools that feed the dashboard. Nothing is marked live until the CMS successfully authenticates and tests the provider API.</p>
+  </div>
+  <div class="alert mb-6">
+    <span>🔐</span>
+    <div><strong>Important — separate credentials</strong><p class="text-sm m-0">A tool connected to ChatGPT through MCP does not automatically connect the deployed website. Each CMS integration needs its own OAuth flow or server-side secret. Never paste API keys into chat, page code, or Git commits.</p></div>
+  </div>
+  <Panel title="🔄 Sync rules" status="planned" subtitle="Shared behavior for all connected providers">
+    <div class="grid sm:grid-cols-2 xl:grid-cols-4 gap-3">
+      <div class="rounded-lg border border-base-300 p-3"><div class="font-semibold">⚡ Webhooks</div><p class="text-xs opacity-70 mb-0">Use provider events when supported.</p></div>
+      <div class="rounded-lg border border-base-300 p-3"><div class="font-semibold">⏱️ Scheduled sync</div><p class="text-xs opacity-70 mb-0">Poll APIs on safe, rate-aware intervals.</p></div>
+      <div class="rounded-lg border border-base-300 p-3"><div class="font-semibold">🧠 Incremental cache</div><p class="text-xs opacity-70 mb-0">Use cursors, ETags and last-sync timestamps where available.</p></div>
+      <div class="rounded-lg border border-base-300 p-3"><div class="font-semibold">↻ Manual refresh</div><p class="text-xs opacity-70 mb-0">Refresh all or one provider; report honest success/errors.</p></div>
+    </div>
+    <p class="text-xs opacity-60 mt-3 mb-0">These are the target behaviors. They are not yet enabled for every provider.</p>
+  </Panel>
+  <div class="grid xl:grid-cols-2 gap-4">
+    {providers.map(p => (
+      <article id={p.id} class="card border border-base-300">
+        <div class="card-body p-4 sm:p-5">
+          <div class="flex items-start justify-between gap-3">
+            <div><h2 class="font-semibold m-0">{p.name}</h2><p class="text-xs opacity-60 m-0 mt-1">{p.group}</p></div>
+            <span class="badge badge-ghost badge-sm">Setup required</span>
+          </div>
+          <div class="text-sm mt-3"><strong>Connection method:</strong> {p.method}</div>
+          <div class="text-sm mt-2"><strong>Prerequisites:</strong> {p.needs}</div>
+          <p class="text-xs opacity-70 mt-3 mb-0">{p.note}</p>
+          <div class="mt-4 flex flex-wrap gap-2">
+            <a class="btn btn-outline btn-sm" href={p.url} target="_blank" rel="noopener noreferrer">Open provider ↗</a>
+            <button class="btn btn-ghost btn-sm copyProvider" type="button" data-provider={p.id}>Copy setup checklist</button>
+          </div>
+        </div>
+      </article>
+    ))}
+  </div>
+  <Panel title="🧭 Recommended connection order" status="planned">
+    <ol class="list-decimal pl-5 text-sm grid gap-2">
+      <li><strong>Secure access first</strong> — lock down the CMS before adding privileged credentials or write actions.</li>
+      <li><strong>Cloudflare + GitHub</strong> — validate live inventory, deployments, commits, workflow runs, and refresh history.</li>
+      <li><strong>Google data</strong> — decide which Sheets workbook is the source of truth, then connect Sheets, Search Console, and GA4 using least-privilege access.</li>
+      <li><strong>Notion + Bing</strong> — authorize the intended workspace and verified site properties.</li>
+      <li><strong>Monetag + Ahrefs + email reports</strong> — use official APIs first; exports/email only when official access is unavailable.</li>
+      <li><strong>Test every connector</strong> — show last successful sync, freshness, permission errors, rate limits, and a manual refresh button.</li>
+    </ol>
+  </Panel>
+  <script>
+    document.querySelectorAll<HTMLButtonElement>('.copyProvider').forEach(button => button.addEventListener('click', async () => {
+      const card = button.closest('article');
+      const text = (card?.innerText || '').trim() + '\n\nStore credentials as server-side Cloudflare Pages secrets. Never expose tokens in client code or commit them. Verify with a real API request before marking connected.';
+      try { await navigator.clipboard.writeText(text); button.textContent = 'Copied ✓'; }
+      catch { window.prompt('Copy setup checklist:', text); }
+    }));
+  </script>
+</Base>
