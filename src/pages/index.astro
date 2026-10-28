@@ -10,9 +10,18 @@ import Base from '../layouts/Base.astro';
     <button id="reloadSnapshot" class="btn btn-outline btn-sm" type="button">↻ Reload snapshot</button>
   </div>
 
+  <div class="flex gap-2 overflow-x-auto pb-2 mb-4" role="tablist" aria-label="Dashboard sections">
+    <button class="btn btn-sm dashboard-tab" role="tab" aria-selected="true" data-tab="dashboard">📊 Dashboard</button>
+    <button class="btn btn-sm btn-outline dashboard-tab" role="tab" aria-selected="false" data-tab="sites">🌐 Sites</button>
+    <button class="btn btn-sm btn-outline dashboard-tab" role="tab" aria-selected="false" data-tab="infrastructure">☁️ Infrastructure</button>
+    <button class="btn btn-sm btn-outline dashboard-tab" role="tab" aria-selected="false" data-tab="github">🐙 GitHub</button>
+    <button class="btn btn-sm btn-outline dashboard-tab" role="tab" aria-selected="false" data-tab="integrations">🔌 Integrations</button>
+    <button class="btn btn-sm btn-outline dashboard-tab" role="tab" aria-selected="false" data-tab="analytics">📈 Analytics</button>
+  </div>
+
   <div id="snapshotStatus" class="alert mb-6" role="status" aria-live="polite"><span class="text-sm">Loading saved Cloudflare data…</span></div>
 
-  <section class="grid grid-cols-2 xl:grid-cols-4 gap-3 mb-6" aria-label="Resource totals">
+  <section data-dashboard-panel="dashboard" role="tabpanel" class="grid grid-cols-2 xl:grid-cols-4 gap-3 mb-6" aria-label="Resource totals">
     {[
       ['Pages projects', 'stat-pages', '—'], ['Workers', 'stat-workers', '—'],
       ['D1 databases', 'stat-d1', '—'], ['KV namespaces', 'stat-kv', '—'],
@@ -32,7 +41,7 @@ import Base from '../layouts/Base.astro';
     <div id="pagesTable" class="state"><strong>Loading…</strong><span>Reading the saved Cloudflare snapshot.</span></div>
   </div></section>
 
-  <section class="grid xl:grid-cols-2 gap-4 mb-6">
+  <section data-dashboard-panel="infrastructure" role="tabpanel" class="grid xl:grid-cols-2 gap-4 mb-6 hidden">
     <article class="card"><div class="card-body p-4 sm:p-5">
       <div class="flex items-center justify-between gap-2 mb-3"><h2 class="font-semibold m-0">⚙️ Workers</h2><span id="workersCount" class="badge">0</span></div>
       <div id="workersTable" class="state"><strong>Loading…</strong></div>
@@ -51,6 +60,35 @@ import Base from '../layouts/Base.astro';
   <section class="card"><div class="card-body p-4 sm:p-5">
     <div class="flex items-center justify-between gap-3 mb-2"><h2 class="font-semibold m-0">🔗 GitHub source</h2><a class="btn btn-outline btn-xs" href="https://github.com/skmstudioservices-cyber/my-CMS-dashboard" target="_blank" rel="noopener noreferrer">Open repository ↗</a></div>
     <div id="sourceDetails" class="state"><strong>Deployment details not saved yet</strong><span>The next successful bridge deployment can add the source commit and workflow link here.</span></div>
+  </div></section>
+
+  <section data-dashboard-panel="integrations" role="tabpanel" class="card mb-6 hidden"><div class="card-body p-4 sm:p-5">
+    <h2 class="font-semibold m-0 mb-2">🔌 Connected tools</h2>
+    <p class="text-sm opacity-70 mb-4">Only verified API connections will be marked connected. These are the planned provider cards, not claims that credentials are already configured.</p>
+    <div class="grid sm:grid-cols-2 xl:grid-cols-3 gap-3">
+      {[
+        ['🐙 GitHub','Repository, commits, Actions, issues and pull requests','Available through connected GitHub tools; app-level sync still needs implementation.'],
+        ['☁️ Cloudflare','Pages, Workers, D1, KV and deployments','Saved snapshot currently available; upstream refresh automation still needs verification.'],
+        ['📝 Notion','Pages, databases and tasks','MCP is available in this workspace; dashboard adapter is not connected yet.'],
+        ['🔎 Google Search Console','Search clicks, impressions, CTR and position','OAuth/API connection required.'],
+        ['🌐 Bing Webmaster Tools','Search performance and indexing','API connection required.'],
+        ['📊 GA4','Traffic, engagement and conversions','Analytics property and OAuth/API connection required.'],
+        ['📈 Sheets / exports','Chosen spreadsheet data sources','Connect only the specific sheet(s) intended as sources of truth.'],
+        ['💰 Monetag / SEO tools','Revenue and SEO reports','API, export, or email parsing depends on each provider’s access.'],
+        ['◇ Supabase / MCP','Connected databases and tools','Provider-specific read/write scopes must be verified.']
+      ].map(([name, description, status]) => (
+        <article class="rounded-xl border border-base-300 p-4">
+          <h3 class="font-semibold m-0 mb-1">{name}</h3>
+          <p class="text-sm opacity-70 m-0 mb-2">{description}</p>
+          <p class="text-xs opacity-60 m-0">{status}</p>
+        </article>
+      ))}
+    </div>
+  </div></section>
+
+  <section data-dashboard-panel="analytics" role="tabpanel" class="card mb-6 hidden"><div class="card-body p-4 sm:p-5">
+    <h2 class="font-semibold m-0 mb-2">📈 Analytics & growth</h2>
+    <div class="state"><strong>No verified analytics source connected to this dashboard yet</strong><span>GA4, Search Console, Bing, Monetag and SEO metrics will appear here only after their real APIs, authorized exports, or explicitly configured email reports have been connected. No fabricated traffic or earnings.</span></div>
   </div></section>
 
   <p class="text-xs opacity-50 mt-5">Read-only overview. Reloading reads the saved snapshot; it does not change Cloudflare resources or start a deployment.</p>
@@ -134,6 +172,20 @@ import Base from '../layouts/Base.astro';
       ['pagesTable','workersTable','d1Table','kvTable'].forEach(id => setState(id, 'Could not load data', 'Check the /api/cf connection and try again.'));
     }
   }
+  const tabs = Array.from(document.querySelectorAll<HTMLButtonElement>('.dashboard-tab'));
+  const panels = Array.from(document.querySelectorAll<HTMLElement>('[data-dashboard-panel]'));
+  function activateTab(name: string) {
+    tabs.forEach(tab => {
+      const selected = tab.dataset.tab === name;
+      tab.setAttribute('aria-selected', String(selected));
+      tab.classList.toggle('btn-outline', !selected);
+      tab.classList.toggle('btn-primary', selected);
+    });
+    panels.forEach(panel => panel.classList.toggle('hidden', panel.dataset.dashboardPanel !== name));
+  }
+  tabs.forEach(tab => tab.addEventListener('click', () => activateTab(tab.dataset.tab || 'dashboard')));
+  activateTab('dashboard');
+
   document.getElementById('reloadSnapshot')?.addEventListener('click', loadSnapshot);
   loadSnapshot();
 </script>
