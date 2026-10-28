@@ -34,4 +34,5 @@ jobs:
           test -f dist/cloudflare/index.html
           test -f dist/github/index.html
           test -f dist/phase-0/index.html
+          test -f dist/integrations/index.html
           test -f functions/api/cf.ts
