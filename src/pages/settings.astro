@@ -8,7 +8,7 @@ import Panel from '../components/Panel.astro';
     <p class="opacity-70 text-sm m-0">Make the dashboard easier on your eyes. Preferences are saved in this browser.</p>
   </div>
 
-  <Panel title="🔤 Font and readability" status="local">
+  <Panel title="🔤 Font and readability" status="connected">
     <div class="grid sm:grid-cols-2 gap-4">
       <label class="grid gap-2 text-sm">Font family
         <select id="fontFamily" class="select w-full">
@@ -70,11 +70,11 @@ import Panel from '../components/Panel.astro';
     <p class="text-sm opacity-70 m-0">The dashboard is being extended to support chart, table, card, and compact-number views. These controls will apply to global and per-site dashboards once those views are connected to live data.</p>
   </Panel>
 
-  <Panel title="🔌 Integrations & synchronization" status="in progress">
+  <Panel title="🔌 Integrations & synchronization" status="planned">
     <p class="text-sm opacity-70 m-0">Connection health, last successful sync, refresh-all, section refresh, and provider-specific reconnect controls will live in the Integrations workspace. A refresh will only be called successful when the upstream source has actually been refreshed.</p>
   </Panel>
 
-  <Panel title="🔐 Security" status="important">
+  <Panel title="🔐 Security" status="disconnected">
     <div class="state"><strong>Authentication must be completed before write actions</strong><span>Noindex is not access control. Before enabling publishing or infrastructure changes, protect the CMS with authentication, server-side secrets, scoped permissions, and an audit trail.</span></div>
   </Panel>
 
