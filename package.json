@@ -8,12 +8,14 @@
   },
   "scripts": {
     "blockmap": "node scripts/blockmap.mjs",
-    "dev": "npm run blockmap && astro dev",
-    "build": "npm run blockmap && astro build",
-    "preview": "astro preview"
+    "dev": "npm run blockmap && npm run apogee:catalog && astro dev",
+    "build": "npm run blockmap && npm run apogee:catalog && astro build",
+    "preview": "astro preview",
+    "apogee:catalog": "node scripts/build-apogee-catalog.mjs"
   },
   "dependencies": {
-    "astro": "7.4.2"
+    "astro": "7.4.2",
+    "@ava-ui/apogee": "0.11.0"
   },
   "devDependencies": {
     "@tailwindcss/vite": "4.3.3",
